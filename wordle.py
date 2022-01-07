@@ -128,7 +128,8 @@ class Wordle():
         self.good_letters = good_letters
 
         #print(good_letters)
-        self.partial_solution = position_tuples
+        if len(position_tuples) > len(self.partial_solution):
+            self.partial_solution = position_tuples
 
     @lru_cache()
     def coverage_guess(self, guess):
@@ -180,23 +181,34 @@ class Wordle():
             if self.match_solution(x) and self.check_possible_word(x)
             and self.check_bad_positions(x) and x not in self.guesses
         ]
-        if len(matching_short_words) <= 10 or not self.use_anagrams:
-            possible_guesses = []
-        else:
+        if len(self.partial_solution) == 4 and len(matching_short_words) > 2:
+            indices_we_know = [x[1] for x in self.partial_solution]
+            print(indices_we_know)
+            missing_indice = [x for x in range(5)
+                              if x not in indices_we_know][0]
+            print(missing_indice)
+            letters_it_could_be = [
+                x[missing_indice] for x, y, z in matching_short_words
+            ]
+            print(f'paradox detected - possible letters {letters_it_could_be}')
+            letter_pool = list(
+                set(letters_it_could_be + ['a', 'o', 'e', 'i', 'u']))
+
+            def local_coverage(x):
+                return sum(letter in letters_it_could_be for letter in x)
+
             possible_guesses = sorted(
-                [(x, self.coverage_guess(x), self.placement_score(x))
+                [(x, local_coverage(x), self.placement_score(x))
                  for x in self.anagram_maker(tuple(letter_pool),
                                              use_product=use_product)
                  if self.check_duplicate_letters(x)],
                 key=lambda x: (-x[1], -x[2]))
+            print(possible_guesses)
 
-            possible_guesses = [
-                x for x in possible_guesses
-                if self.match_solution(x[0]) and self.check_possible_word(x[0])
-                and self.check_bad_positions(x[0]) and x not in self.guesses
-            ]
         if not possible_guesses:
             print("No Anagrams found from letter pool")
+        else:
+            matching_short_words = []
 
         return possible_guesses, sorted(matching_short_words,
                                         key=lambda x: (-x[1], -x[2]))
@@ -212,7 +224,8 @@ class Wordle():
             i += 1
             guess_anagram, guess_word_list = self.generate_guess()
             #print(guess_anagram[:10], guess_word_list[:10])
-            if len(guess_word_list) < 8 or not guess_anagram:
+            if guess_word_list and len(
+                    guess_word_list) < 8 or not guess_anagram:
                 print("final list, anagram generation not used")
                 if i <= 2:
                     guess_word_list = [
