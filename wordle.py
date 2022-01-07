@@ -180,7 +180,7 @@ class Wordle():
             if self.match_solution(x) and self.check_possible_word(x)
             and self.check_bad_positions(x) and x not in self.guesses
         ]
-        if len(matching_short_words) <= 10 and not self.use_anagrams:
+        if len(matching_short_words) <= 10 or not self.use_anagrams:
             possible_guesses = []
         else:
             possible_guesses = sorted(
