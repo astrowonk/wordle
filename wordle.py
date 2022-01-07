@@ -197,7 +197,7 @@ class Wordle():
 
             possible_guesses = sorted(
                 [(x, local_coverage(x), self.placement_score(x))
-                 for x in self.short_words],
+                 for x in self.short_words if self.check_duplicate_letters(x)],
                 key=lambda x: x[1],
                 reverse=True)
             print(possible_guesses[:10])
@@ -255,6 +255,7 @@ class Wordle():
                 print(f"Wordle {self.wordle_num} {i}/6")
 
                 break
+        return i, guess
 
 
 class WordNetWordle(Wordle):
