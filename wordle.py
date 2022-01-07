@@ -195,7 +195,7 @@ class Wordle():
     def check_bad_positions(self, word):
         return all(word[val] != key for key, val in self.bad_position_dict)
 
-    def generate_guess(self):
+    def generate_guess(self, i=0):
         #self.good_letters = list(set(self.good_letters))
 
         possible_letters = self.good_letters
@@ -213,9 +213,10 @@ class Wordle():
             if self.match_solution(x) and self.check_possible_word(x)
             and self.check_bad_positions(x) and x not in self.guesses
         ]
-        if (sum(self.good_letters.values()) == 4 and len(matching_short_words)
-                > 2) or (len(self.partial_solution) == 3
-                         and len(matching_short_words) > 3):
+        if i <= 5 and ((sum(self.good_letters.values()) == 4
+                        and len(matching_short_words) > 2) or
+                       (len(self.partial_solution) == 3
+                        and len(matching_short_words) > 3)):
 
             #can we generalize this for partial solutions of 3?
             def get_sub_string(x, indices):
@@ -266,7 +267,7 @@ class Wordle():
         i = 0
         while True:
             i += 1
-            guess_anagram, guess_word_list = self.generate_guess()
+            guess_anagram, guess_word_list = self.generate_guess(i)
 
             print(guess_word_list[:10], len(guess_word_list))
             if guess_word_list:
