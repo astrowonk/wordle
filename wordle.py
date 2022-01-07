@@ -166,8 +166,6 @@ class Wordle():
                 "index in @self.possible_letters and index not in @possible_letters"
             ).head(search_length)['index'])
 
-        letter_pool = list(set(possible_letters + other_letters))
-
         matching_short_words = [
             (x, self.coverage_guess(x), self.placement_score(x))
             for x in self.short_words
@@ -191,7 +189,7 @@ class Wordle():
             possible_guesses = sorted(
                 [(x, local_coverage(x), self.placement_score(x))
                  for x in self.short_words if self.check_duplicate_letters(x)],
-                key=lambda x: x[1],
+                key=lambda x: (x[1], x[2]),
                 reverse=True)
             print(possible_guesses[:10])
 
@@ -214,7 +212,10 @@ class Wordle():
             guess_anagram, guess_word_list = self.generate_guess()
 
             print(guess_word_list[:10], len(guess_word_list))
-            guess = guess_word_list[0][0]
+            if guess_word_list:
+                guess = guess_word_list[0][0]
+            else:
+                guess = guess_anagram[0][0]
             self.final_list_length = len(guess_word_list)
 
             print(f"Guess is **{guess}**")
