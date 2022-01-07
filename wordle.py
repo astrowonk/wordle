@@ -15,6 +15,8 @@ def flatten_list(list_of_lists):
 
 
 class Wordle():
+    good_letters = None
+
     def __init__(self, use_anagrams=False):
         self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
 
@@ -71,10 +73,26 @@ class Wordle():
         match_and_position = [
             2 * int(letter == answer[i]) for i, letter in enumerate(guess)
         ]
+        print(match_and_position)
+
         remaining_letters = [
             x for i, x in enumerate(answer) if match_and_position[i] != 2
         ]
-        non_position_match = [int(x in remaining_letters) for x in guess]
+        print(remaining_letters)
+
+        def find_non_position_match(remaining_letters, guess):
+            """has to be a better way"""
+            res = []
+            for letter in guess:
+                if letter in remaining_letters:
+                    res.append(1)
+                    remaining_letters.remove(letter)
+                else:
+                    res.append(0)
+            return res
+
+        non_position_match = find_non_position_match(remaining_letters, guess)
+        print(non_position_match)
         match_and_position = [
             x or y for x, y in zip(match_and_position, non_position_match)
         ]
@@ -122,9 +140,15 @@ class Wordle():
         for letter in bad_letters:
             if letter in self.possible_letters:
                 self.possible_letters.remove(letter)
-        self.good_letters = good_letters
+        print(f"Good letters New : {good_letters}, old {self.good_letters}")
+        if len(good_letters) > len(self.good_letters):
+            self.good_letters = good_letters
+        elif len(good_letters) > 0 and len(good_letters) < len(
+                self.good_letters) and not all(x in self.good_letters
+                                               for x in good_letters):
+            self.good_letters.extend(good_letters)
 
-        #print(good_letters)
+    #print(good_letters)
         if len(position_tuples) > len(self.partial_solution):
             self.partial_solution = position_tuples
 
@@ -143,7 +167,8 @@ class Wordle():
         return True
 
     def check_possible_word(self, word):
-        """ensures the word has the right minimum count of the letters we know are in the word and no impossible letters"""
+        """ensures the word has the right minimum count of the letters we know are in the word and 
+        no impossible letters"""
         good_counter = Counter(self.good_letters)
         word_count_dict = dict(Counter(word))
         return all(
@@ -172,23 +197,41 @@ class Wordle():
             if self.match_solution(x) and self.check_possible_word(x)
             and self.check_bad_positions(x) and x not in self.guesses
         ]
-        if len(self.partial_solution) == 4 and len(matching_short_words) > 2:
+        if (len(self.partial_solution) == 4 and len(matching_short_words) > 2
+            ) or (len(self.partial_solution) == 3
+                  and len(matching_short_words) > 4):
+            print("isn't this three?")
+            print(len(matching_short_words))
+
+            #can we generalize this for partial solutions of 3?
+            def get_sub_string(x, indices):
+                return ''.join(x[i] for i in indices)
+
             indices_we_know = [x[1] for x in self.partial_solution]
             print(indices_we_know)
-            missing_indice = [x for x in range(5)
-                              if x not in indices_we_know][0]
-            print(missing_indice)
-            letters_it_could_be = [
-                x[missing_indice] for x, y, z in matching_short_words
-            ]
-            print(f'paradox detected - possible letters {letters_it_could_be}')
+            missing_indices = [x for x in range(5) if x not in indices_we_know]
+            print(missing_indices)
+            letters_it_could_be = set(
+                flatten_list([
+                    get_sub_string(x, missing_indices)
+                    for x, y, z in matching_short_words
+                ]))
+            #don't use any letters we know, maximize coverage of new letters
+            print(letters_it_could_be, self.good_letters)
+            letters_it_could_be = list(
+                letters_it_could_be.difference(set(self.good_letters)))
+
+            print(
+                f'paradox detected - possible letters {letters_it_could_be}, possibel words are {matching_short_words}'
+            )
 
             def local_coverage(x):
                 return sum(letter in letters_it_could_be for letter in x)
 
             possible_guesses = sorted(
                 [(x, local_coverage(x), self.placement_score(x))
-                 for x in self.short_words if self.check_duplicate_letters(x)],
+                 for x in self.short_words
+                 if self.check_duplicate_letters(x) and x not in self.guesses],
                 key=lambda x: (x[1], x[2]),
                 reverse=True)
             print(possible_guesses[:10])
