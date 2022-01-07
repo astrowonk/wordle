@@ -191,19 +191,16 @@ class Wordle():
                 x[missing_indice] for x, y, z in matching_short_words
             ]
             print(f'paradox detected - possible letters {letters_it_could_be}')
-            letter_pool = list(
-                set(letters_it_could_be + ['a', 'o', 'e', 'i', 'u']))
 
             def local_coverage(x):
                 return sum(letter in letters_it_could_be for letter in x)
 
             possible_guesses = sorted(
                 [(x, local_coverage(x), self.placement_score(x))
-                 for x in self.anagram_maker(tuple(letter_pool),
-                                             use_product=use_product)
-                 if self.check_duplicate_letters(x)],
-                key=lambda x: (-x[1], -x[2]))
-            print(possible_guesses)
+                 for x in self.short_words],
+                key=lambda x: x[1],
+                reverse=True)
+            print(possible_guesses[:10])
 
         if not possible_guesses:
             print("No Anagrams found from letter pool")
