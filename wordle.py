@@ -224,12 +224,6 @@ class Wordle():
             if guess_word_list and len(
                     guess_word_list) < 8 or not guess_anagram:
                 print("final list, anagram generation not used")
-                if i <= 2:  # forcing it to not have duplicate letters in the early rounds
-                    # the coverage score doesn't reward duplicates anymore so this may be moot?
-                    guess_word_list = [
-                        p for p in guess_word_list
-                        if self.check_duplicate_letters(p[0])
-                    ]
                 print(guess_word_list[:10], len(guess_word_list))
                 guess = guess_word_list[0][0]
                 self.final_list_length = len(guess_word_list)
