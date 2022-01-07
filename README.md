@@ -28,3 +28,6 @@ w2 = WordNetWordle()
 w2.play_game('siege')
 ```
 
+## Todo
+
+It's doing something weird with `amaze`.

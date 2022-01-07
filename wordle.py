@@ -65,15 +65,22 @@ class Wordle():
         if guess == answer:
             return ["Winner"] * 3 + [[2, 2, 2, 2, 2]]
         match_and_position = [
-            int(letter == answer[i]) + int(letter in answer)
-            for i, letter in enumerate(guess)
+            2 * int(letter == answer[i]) for i, letter in enumerate(guess)
         ]
-        print(match_and_position)
-        return [x for i, x in enumerate(guess)
-                if match_and_position[i] == 0], [
-                    x for i, x in enumerate(guess) if match_and_position[i] > 0
-                ], [(x, i) for i, x in enumerate(guess)
-                    if match_and_position[i] > 1], match_and_position
+        remaining_letters = [
+            x for i, x in enumerate(answer) if match_and_position[i] != 2
+        ]
+        non_position_match = [int(x in remaining_letters) for x in guess]
+        match_and_position = [
+            sum([x, y]) for x, y in zip(match_and_position, non_position_match)
+        ]
+        #print(match_and_position)
+        return [
+            x for i, x in enumerate(guess)
+            if match_and_position[i] == 0 and x not in self.answer
+        ], [x for i, x in enumerate(guess) if match_and_position[i] > 0], [
+            (x, i) for i, x in enumerate(guess) if match_and_position[i] > 1
+        ], match_and_position
 
     def init_game(self, answer):
         self.possible_letters = list('abcdefghijklmnopqrstuvwxyz')
@@ -102,8 +109,7 @@ class Wordle():
             if letter in self.possible_letters:
                 self.possible_letters.remove(letter)
         self.good_letters = good_letters
-        print("good letters")
-        print(self.good_letters)
+
         #print(good_letters)
         self.partial_solution = position_tuples
 
@@ -135,7 +141,6 @@ class Wordle():
     def generate_guess(self):
         #self.good_letters = list(set(self.good_letters))
 
-        print(self.good_letters, 'beggining of guess')
         possible_letters = self.good_letters
         missing_length = 5 - len(possible_letters)
         search_length = missing_length + 2
