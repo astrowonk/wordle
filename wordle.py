@@ -101,7 +101,10 @@ class Wordle():
         for letter in bad_letters:
             if letter in self.possible_letters:
                 self.possible_letters.remove(letter)
-        self.good_letters += good_letters
+        self.good_letters = good_letters
+        print("good letters")
+        print(self.good_letters)
+        #print(good_letters)
         self.partial_solution = position_tuples
 
     def coverage_guess(self, guess):
@@ -118,14 +121,21 @@ class Wordle():
         return True
 
     def check_possible_word(self, word):
-        return all(x in word for x in self.good_letters) and all(
-            x in self.possible_letters for x in word)
+        """ensures the word has the right minimum count of the letters we know are in the word and no impossible letters"""
+        good_counter = Counter(self.good_letters)
+        word_count_dict = dict(Counter(word))
+        return all(
+            word_count_dict.get(key, 0) >= val
+            for key, val in good_counter.items()) and all(
+                x in self.possible_letters for x in word)
 
     def check_bad_positions(self, word):
         return all(word[val] != key for key, val in self.bad_position_dict)
 
     def generate_guess(self):
-        self.good_letters = list(set(self.good_letters))
+        #self.good_letters = list(set(self.good_letters))
+
+        print(self.good_letters, 'beggining of guess')
         possible_letters = self.good_letters
         missing_length = 5 - len(possible_letters)
         search_length = missing_length + 2
