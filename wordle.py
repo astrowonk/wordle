@@ -18,7 +18,7 @@ def flatten_list(list_of_lists):
 
 
 class Wordle():
-    def __init__(self):
+    def __init__(self, use_anagrams=False):
         short_words_guttenburg = list({
             word
             for word in gutenberg.words() if len(word) == 5
@@ -37,6 +37,7 @@ class Wordle():
             i: dict(Counter([word[i] for word in self.short_words]))
             for i in range(5)
         }
+        self.use_anagrams = use_anagrams
 
     @lru_cache()
     def placement_score(self, word):
@@ -178,7 +179,7 @@ class Wordle():
             if self.match_solution(x) and self.check_possible_word(x)
             and self.check_bad_positions(x) and x not in self.guesses
         ]
-        if len(matching_short_words) < 8:
+        if len(matching_short_words) <= 10 and not self.use_anagrams:
             possible_guesses = []
             print("skipping anagram generation")
         else:
@@ -194,7 +195,8 @@ class Wordle():
                 if self.match_solution(x[0]) and self.check_possible_word(x[0])
                 and self.check_bad_positions(x[0]) and x not in self.guesses
             ]
-        #  print(possible_guesses)
+        if not possible_guesses:
+            print("No Anagrams found from letter pool")
 
         return possible_guesses, sorted(matching_short_words,
                                         key=lambda x: (-x[1], -x[2]))
