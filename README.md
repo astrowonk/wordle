@@ -30,4 +30,5 @@ w2.play_game('siege')
 
 ## Todo
 
-It's doing something weird with `amaze`.
+* It's doing something weird with `amaze`.
+* Its final guesses when words are very similar are based on letter frequency, not how common the word is.
