@@ -4,9 +4,6 @@ import nltk
 
 import re
 from functools import lru_cache
-
-re.match(r"\w{5}", "_all_")
-
 from nltk.corpus import gutenberg, brown, wordnet, words
 from itertools import permutations, product
 from collections import Counter
