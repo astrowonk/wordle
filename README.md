@@ -14,7 +14,7 @@ I can probably ditch the pandas requirement but it made it easier.
 
 There are currently 2 subclasses and the parent class that use different corpuses. Some work better than others depending on the target word. For example `WordnetWordle` can get a hypothetical "wound" word in 6 guesses, but the guttenburg+brown corpuses take 7 tries.
 
-Wheras, `rebus` from Janury 1, 2022 doesn't exist in guttenburg+brown so one has to use one of the subclasses.
+Wheras, the infamous `rebus` from Janury 1, 2022 doesn't exist in guttenburg+brown so one has to use one of the subclasses.
 
 I think the original `Wordle` class with its smaller word list generally performs best, but not always.
 
