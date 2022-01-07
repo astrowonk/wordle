@@ -170,10 +170,6 @@ class Wordle():
             ).head(search_length)['index'])
 
         letter_pool = list(set(possible_letters + other_letters))
-        if len(self.partial_solution) >= 3:
-            use_product = True
-        else:
-            use_product = False
 
         matching_short_words = [
             (x, self.coverage_guess(x), self.placement_score(x))
@@ -202,9 +198,8 @@ class Wordle():
                 reverse=True)
             print(possible_guesses[:10])
 
-        if not possible_guesses:
-            print("No Anagrams found from letter pool")
-        else:
+        if possible_guesses:
+            ## zeroing out the other words in a paradox situation
             matching_short_words = []
 
         return possible_guesses, sorted(matching_short_words,
@@ -220,24 +215,11 @@ class Wordle():
         while True:
             i += 1
             guess_anagram, guess_word_list = self.generate_guess()
-            #print(guess_anagram[:10], guess_word_list[:10])
-            if guess_word_list and len(
-                    guess_word_list) < 8 or not guess_anagram:
-                print("final list, anagram generation not used")
-                print(guess_word_list[:10], len(guess_word_list))
-                guess = guess_word_list[0][0]
-                self.final_list_length = len(guess_word_list)
-            else:
-                #combining anagrams and words, maybe I can just get rid of anagram generation
-                p = sorted(list(set(guess_anagram[:10] +
-                                    guess_word_list[:10])),
-                           key=lambda x: (-x[1], -x[2]))
 
-                p = [x[0] for x in p if self.check_duplicate_letters(x[0])]
-                print('final list')
-                print(p, len(p))
-                guess = p[0]
-                self.final_list_length = len(p)
+            print(guess_word_list[:10], len(guess_word_list))
+            guess = guess_word_list[0][0]
+            self.final_list_length = len(guess_word_list)
+
             print(f"Guess is **{guess}**")
             out = self.evaulate_round(guess)
             if out == 'Winner':
