@@ -178,8 +178,8 @@ class Wordle():
             guess_anagram, guess_word_list = self.generate_guess()
             #print(guess_anagram[:10], guess_word_list[:10])
             if len(guess_word_list) < 8 or not guess_anagram:
-                print("final list")
-                print(guess_word_list)
+                print("final list, anagram generation not used")
+                print(guess_word_list[:10])
                 guess = guess_word_list[0][0]
             else:
                 p = sorted(list(set(guess_anagram[:10] +
@@ -194,6 +194,9 @@ class Wordle():
             out = self.evaulate_round(guess)
             if out == 'Winner':
                 print(f"Winner {guess} in {i} guesses")
+                ## need to turn this into an image somehow
+                for line in self.success_grid:
+                    print(line)
                 break
 
 

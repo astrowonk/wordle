@@ -1,7 +1,7 @@
 
 ## Wordle Solver
 
-This can not help you win a live game of wordle. It can algorithimically solve a wordle like puzzle only if you pass in a target word. In theory, it's making the optimal plays to maximize letter frequency and position frequency. So if you do better than the algorithm, you had some good luck!
+This can not help you win a live game of wordle. It can algorithimically solve a wordle like puzzle only if you pass in a target word. In theory, it's making the optimal plays to maximize letter frequency and position frequency. So if you did better than the algorithm, you had some good luck! That is the purpose of this class, to - after the fact - compare one's performance against the algorithm.
 
 I may turn this into a twitter bot at some point.
 
@@ -24,5 +24,7 @@ I think the original `Wordle` class with its smaller word list generally perform
 from wordle import Wordle,WordNetWordle
 w = Wordle()
 w.play_game('siege')
+w2 = WordNetWordle()
+w2.play_game('siege')
 ```
 
