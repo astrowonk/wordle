@@ -3,6 +3,7 @@ from nltk.corpus import words
 import nltk
 
 import re
+from functools import lru_cache
 
 re.match(r"\w{5}", "_all_")
 
@@ -37,6 +38,7 @@ class Wordle():
             for i in range(5)
         }
 
+    @lru_cache()
     def placement_score(self, word):
         return sum([
             self.placement_counter[i].get(letter, 0)
@@ -53,6 +55,7 @@ class Wordle():
                                            columns=['frequency'
                                                     ]).reset_index()
 
+    @lru_cache()
     def anagram_maker(self, letters, use_product=False):
         if use_product:
             p = list({''.join(x) for x in product(letters, repeat=5)})
@@ -60,6 +63,7 @@ class Wordle():
             p = list({''.join(x) for x in permutations(letters, r=5)})
         return [x for x in p if x in self.short_words]
 
+    @lru_cache()
     def score_word(self, guess, answer):
         assert guess in self.short_words, 'guess not in short words'
         if guess == answer:
@@ -72,7 +76,7 @@ class Wordle():
         ]
         non_position_match = [int(x in remaining_letters) for x in guess]
         match_and_position = [
-            sum([x, y]) for x, y in zip(match_and_position, non_position_match)
+            x or y for x, y in zip(match_and_position, non_position_match)
         ]
         #print(match_and_position)
         return [
@@ -90,11 +94,21 @@ class Wordle():
         self.guesses = []
         self.bad_position_dict = []
         self.success_grid = []
+        self.luck_factor = None
+        self.luck_factor_flag = 0
+        self.final_list_length = None
 
     def evaulate_round(self, guess):
         self.guesses.append(guess)
         bad_letters, good_letters, position_tuples, match_and_position = self.score_word(
             guess, self.answer)
+        # when the word could be mound hound sound etc this is basically luck, so
+        # the luck factor indicates how many equally good options there were at the end
+        if self.luck_factor_flag and not self.luck_factor:
+            self.luck_factor = self.final_list_length
+        if sum(match_and_position) == 8 and not self.luck_factor:
+            self.luck_factor_flag = 1
+
         self.success_grid.append(match_and_position)
         self.bad_position_dict.extend([
             (x, z)
@@ -113,8 +127,9 @@ class Wordle():
         #print(good_letters)
         self.partial_solution = position_tuples
 
+    @lru_cache()
     def coverage_guess(self, guess):
-        return sum([self.score_dict[x] for x in guess])
+        return sum([self.score_dict[x] for x in set(guess)])
 
     def match_solution(self, guess):
         return all(letter == guess[i] for letter, i in self.partial_solution)
@@ -151,7 +166,7 @@ class Wordle():
             ).head(search_length)['index'])
 
         letter_pool = list(set(possible_letters + other_letters))
-        #   print(letter_pool)
+        print(f"Anagram letter pool {letter_pool}")
         if len(self.partial_solution) >= 3:
             use_product = True
         else:
@@ -169,10 +184,10 @@ class Wordle():
         else:
             possible_guesses = sorted(
                 [(x, self.coverage_guess(x), self.placement_score(x))
-                 for x in self.anagram_maker(letter_pool,
+                 for x in self.anagram_maker(tuple(letter_pool),
                                              use_product=use_product)
                  if self.check_duplicate_letters(x)],
-                key=lambda x: (-x[2], -x[1]))
+                key=lambda x: (-x[1], -x[2]))
 
             possible_guesses = [
                 x for x in possible_guesses
@@ -182,7 +197,7 @@ class Wordle():
         #  print(possible_guesses)
 
         return possible_guesses, sorted(matching_short_words,
-                                        key=lambda x: -x[2])
+                                        key=lambda x: (-x[1], -x[2]))
 
     def play_game(self, answer):
         assert answer in self.short_words, "answer not in short words"
@@ -199,17 +214,20 @@ class Wordle():
                         p for p in guess_word_list
                         if self.check_duplicate_letters(p[0])
                     ]
-                print(guess_word_list[:10])
+                print(guess_word_list[:10], len(guess_word_list))
                 guess = guess_word_list[0][0]
+                self.final_list_length = len(guess_word_list)
             else:
+                #combining anagrams and words, maybe I can just get rid of anagram generation
                 p = sorted(list(set(guess_anagram[:10] +
                                     guess_word_list[:10])),
                            key=lambda x: (-x[1], -x[2]))
 
                 p = [x[0] for x in p if self.check_duplicate_letters(x[0])]
                 print('final list')
-                print(p)
+                print(p, len(p))
                 guess = p[0]
+                self.final_list_length = len(p)
             print(f"Guess is **{guess}**")
             out = self.evaulate_round(guess)
             if out == 'Winner':
@@ -217,6 +235,9 @@ class Wordle():
                 ## need to turn this into an image somehow
                 for line in self.success_grid:
                     print(line)
+                print(
+                    f"Luck factor {self.luck_factor or self.final_list_length}"
+                )
                 break
 
 
