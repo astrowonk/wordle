@@ -143,7 +143,7 @@ class Wordle():
 
         possible_letters = self.good_letters
         missing_length = 5 - len(possible_letters)
-        search_length = missing_length + 2
+        search_length = missing_length + 3
         possible_guesses = []
         other_letters = list(
             self.letter_rank_df.query(
@@ -194,6 +194,11 @@ class Wordle():
             #print(guess_anagram[:10], guess_word_list[:10])
             if len(guess_word_list) < 8 or not guess_anagram:
                 print("final list, anagram generation not used")
+                if i <= 2:
+                    guess_word_list = [
+                        p for p in guess_word_list
+                        if self.check_duplicate_letters(p[0])
+                    ]
                 print(guess_word_list[:10])
                 guess = guess_word_list[0][0]
             else:
