@@ -63,7 +63,7 @@ class Wordle():
     def score_word(self, guess, answer):
         assert guess in self.short_words, 'guess not in short words'
         if guess == answer:
-            return ["Winner"] * 4
+            return ["Winner"] * 3 + [[2, 2, 2, 2, 2]]
         match_and_position = [
             int(letter == answer[i]) + int(letter in answer)
             for i, letter in enumerate(guess)
@@ -82,11 +82,13 @@ class Wordle():
         self.partial_solution = []
         self.guesses = []
         self.bad_position_dict = []
+        self.success_grid = []
 
     def evaulate_round(self, guess):
         self.guesses.append(guess)
         bad_letters, good_letters, position_tuples, match_and_position = self.score_word(
             guess, self.answer)
+        self.success_grid.append(match_and_position)
         self.bad_position_dict.extend([
             (x, z)
             for x, y, z in zip(guess, match_and_position, [0, 1, 2, 3, 4])
@@ -134,7 +136,7 @@ class Wordle():
             ).head(search_length)['index'])
 
         letter_pool = list(set(possible_letters + other_letters))
-        print(letter_pool)
+        #   print(letter_pool)
         if len(self.partial_solution) >= 3:
             use_product = True
         else:
@@ -162,7 +164,7 @@ class Wordle():
                 if self.match_solution(x[0]) and self.check_possible_word(x[0])
                 and self.check_bad_positions(x[0]) and x not in self.guesses
             ]
-            print(possible_guesses)
+        #  print(possible_guesses)
 
         return possible_guesses, sorted(matching_short_words,
                                         key=lambda x: -x[2])
@@ -174,8 +176,9 @@ class Wordle():
         while True:
             i += 1
             guess_anagram, guess_word_list = self.generate_guess()
-            print(guess_anagram[:10], guess_word_list[:10])
+            #print(guess_anagram[:10], guess_word_list[:10])
             if len(guess_word_list) < 8 or not guess_anagram:
+                print("final list")
                 print(guess_word_list)
                 guess = guess_word_list[0][0]
             else:
@@ -187,7 +190,7 @@ class Wordle():
                 print('final list')
                 print(p)
                 guess = p[0]
-            print(guess)
+            print(f"Guess is **{guess}**")
             out = self.evaulate_round(guess)
             if out == 'Winner':
                 print(f"Winner {guess} in {i} guesses")
@@ -207,7 +210,7 @@ class WordNetWordle(Wordle):
         self.make_frequency_series()
 
 
-class WordListWordle(Wordle):
+class WordListWordle(WordNetWordle):
     def __init__(self):
         super().__init__()
         more_short_words = list({
