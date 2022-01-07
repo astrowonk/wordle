@@ -19,6 +19,8 @@ def flatten_list(list_of_lists):
 
 class Wordle():
     def __init__(self, use_anagrams=False):
+        self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
+
         short_words_guttenburg = list({
             word
             for word in gutenberg.words() if len(word) == 5
@@ -167,7 +169,6 @@ class Wordle():
             ).head(search_length)['index'])
 
         letter_pool = list(set(possible_letters + other_letters))
-        print(f"Anagram letter pool {letter_pool}")
         if len(self.partial_solution) >= 3:
             use_product = True
         else:
@@ -181,7 +182,6 @@ class Wordle():
         ]
         if len(matching_short_words) <= 10 and not self.use_anagrams:
             possible_guesses = []
-            print("skipping anagram generation")
         else:
             possible_guesses = sorted(
                 [(x, self.coverage_guess(x), self.placement_score(x))
@@ -201,9 +201,12 @@ class Wordle():
         return possible_guesses, sorted(matching_short_words,
                                         key=lambda x: (-x[1], -x[2]))
 
-    def play_game(self, answer):
+    def play_game(self, answer, wordle_num=None):
         assert answer in self.short_words, "answer not in short words"
         self.init_game(answer)
+        self.wordle_num = ''
+        if wordle_num:
+            self.wordle_num = str(wordle_num)
         i = 0
         while True:
             i += 1
@@ -233,13 +236,14 @@ class Wordle():
             print(f"Guess is **{guess}**")
             out = self.evaulate_round(guess)
             if out == 'Winner':
-                print(f"Winner {guess} in {i} guesses")
                 ## need to turn this into an image somehow
                 for line in self.success_grid:
-                    print(line)
+                    print(''.join([self.image_mapping_dict[x] for x in line]))
                 print(
                     f"Luck factor {self.luck_factor or self.final_list_length}"
                 )
+                print(f"Wordle {self.wordle_num} {i}/6")
+
                 break
 
 
