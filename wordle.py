@@ -73,12 +73,13 @@ class Wordle():
         match_and_position = [
             2 * int(letter == answer[i]) for i, letter in enumerate(guess)
         ]
-        print(match_and_position)
+        #print(match_and_position)
 
         remaining_letters = [
             x for i, x in enumerate(answer) if match_and_position[i] != 2
         ]
-        print(remaining_letters)
+
+        #print(remaining_letters)
 
         def find_non_position_match(remaining_letters, guess):
             """has to be a better way"""
@@ -107,7 +108,7 @@ class Wordle():
     def init_game(self, answer):
         self.possible_letters = list('abcdefghijklmnopqrstuvwxyz')
         self.answer = answer
-        self.good_letters = []
+        self.good_letters = {}
         self.partial_solution = []
         self.guesses = []
         self.bad_position_dict = []
@@ -116,7 +117,7 @@ class Wordle():
         self.luck_factor_flag = 0
         self.final_list_length = None
 
-    def evaulate_round(self, guess):
+    def evaluate_round(self, guess):
         self.guesses.append(guess)
         bad_letters, good_letters, position_tuples, match_and_position = self.score_word(
             guess, self.answer)
@@ -141,12 +142,20 @@ class Wordle():
             if letter in self.possible_letters:
                 self.possible_letters.remove(letter)
         print(f"Good letters New : {good_letters}, old {self.good_letters}")
-        if len(good_letters) > len(self.good_letters):
-            self.good_letters = good_letters
-        elif len(good_letters) > 0 and len(good_letters) < len(
-                self.good_letters) and not all(x in self.good_letters
-                                               for x in good_letters):
-            self.good_letters.extend(good_letters)
+        if not self.good_letters:
+            self.good_letters = Counter(good_letters)
+        else:
+            c = Counter(good_letters)
+            for key, val in c.items():
+                if val > self.good_letters[key]:
+                    self.good_letters[key] = val
+
+        ##if len(good_letters) > len(self.good_letters):
+        #  self.good_letters = good_letters
+        #elif len(good_letters) > 0 and len(good_letters) < len(
+        #       self.good_letters) and not all(x in self.good_letters
+        #             for x in good_letters):
+        #  self.good_letters.extend(good_letters)
 
     #print(good_letters)
         if len(position_tuples) > len(self.partial_solution):
@@ -169,12 +178,19 @@ class Wordle():
     def check_possible_word(self, word):
         """ensures the word has the right minimum count of the letters we know are in the word and 
         no impossible letters"""
-        good_counter = Counter(self.good_letters)
         word_count_dict = dict(Counter(word))
         return all(
             word_count_dict.get(key, 0) >= val
-            for key, val in good_counter.items()) and all(
+            for key, val in self.good_letters.items()) and all(
                 x in self.possible_letters for x in word)
+
+    def check_paradox_word(self, word):
+        """ensures the word has the right minimum count of the letters we know are in the word and 
+        no impossible letters"""
+        return all(x in self.possible_letters for x in word)
+
+    def score_paradox_word(self, word, letters_it_could_be):
+        return sum(x in letters_it_could_be for x in word)
 
     def check_bad_positions(self, word):
         return all(word[val] != key for key, val in self.bad_position_dict)
@@ -197,32 +213,30 @@ class Wordle():
             if self.match_solution(x) and self.check_possible_word(x)
             and self.check_bad_positions(x) and x not in self.guesses
         ]
-        if (len(self.partial_solution) == 4 and len(matching_short_words) > 2
-            ) or (len(self.partial_solution) == 3
-                  and len(matching_short_words) > 4):
-            print("isn't this three?")
-            print(len(matching_short_words))
+        if (sum(self.good_letters.values()) == 4 and len(matching_short_words)
+                > 2) or (len(self.partial_solution) == 3
+                         and len(matching_short_words) > 3):
 
             #can we generalize this for partial solutions of 3?
             def get_sub_string(x, indices):
                 return ''.join(x[i] for i in indices)
 
             indices_we_know = [x[1] for x in self.partial_solution]
-            print(indices_we_know)
             missing_indices = [x for x in range(5) if x not in indices_we_know]
-            print(missing_indices)
             letters_it_could_be = set(
                 flatten_list([
                     get_sub_string(x, missing_indices)
                     for x, y, z in matching_short_words
                 ]))
             #don't use any letters we know, maximize coverage of new letters
-            print(letters_it_could_be, self.good_letters)
+            letters_it_could_be = letters_it_could_be.difference(
+                set(self.good_letters.keys()))
+            #don't use any letters we know it can't be.
             letters_it_could_be = list(
-                letters_it_could_be.difference(set(self.good_letters)))
+                letters_it_could_be.intersection(set(self.possible_letters)))
 
             print(
-                f'paradox detected - possible letters {letters_it_could_be}, possibel words are {matching_short_words}'
+                f'paradox detected - possible letters {letters_it_could_be}, possible words are {matching_short_words[:10]}...'
             )
 
             def local_coverage(x):
@@ -262,7 +276,7 @@ class Wordle():
             self.final_list_length = len(guess_word_list)
 
             print(f"Guess is **{guess}**")
-            out = self.evaulate_round(guess)
+            out = self.evaluate_round(guess)
             if out == 'Winner':
                 ## need to turn this into an image somehow
                 for line in self.success_grid:
