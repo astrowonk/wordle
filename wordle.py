@@ -235,7 +235,9 @@ class Wordle():
                            (len(self.partial_solution) == 3
                             and len(matching_short_words) > 2) or
                            (len(matching_short_words) > 4)):
-
+            #this line above is like hyperparameter tuning. What's the right
+            #blend of parameters? And am I trying to avoid failure or
+            # get the best average time to solution and accept more failures?
             def get_sub_string(x, indices):
                 return ''.join(x[i] for i in indices)
 
