@@ -54,6 +54,21 @@ class Wordle():
         ])
 
     def make_frequency_series(self):
+        self.score_dict = {
+            letter: sum([letter in word for word in self.short_words])
+            for letter in 'abcdefghijklmnopqrstuvwxyz'
+        }
+        letter_rank_series = pd.Series(
+            self.score_dict).sort_values(ascending=False)
+        self.letter_rank_df = pd.DataFrame(letter_rank_series,
+                                           columns=['frequency'
+                                                    ]).reset_index()
+        self.placement_counter = {
+            i: dict(Counter([word[i] for word in self.short_words]))
+            for i in range(5)
+        }
+
+    def make_frequency_series_old(self):
         all_letters = flatten_list([list(x) for x in self.short_words])
         c = Counter(all_letters)
         self.score_dict = dict(c)
