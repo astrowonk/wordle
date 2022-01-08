@@ -8,6 +8,11 @@ from nltk.corpus import gutenberg, brown, wordnet, words
 from itertools import permutations, product
 from collections import Counter
 import pandas as pd
+from exclusions import EXCLUSION_SET
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 def flatten_list(list_of_lists):
@@ -17,7 +22,9 @@ def flatten_list(list_of_lists):
 class Wordle():
     good_letters = None
 
-    def __init__(self, use_anagrams=False):
+    def __init__(self, use_anagrams=False, log_level="DEBUG"):
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(log_level)
         self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
 
         short_words_guttenburg = list({
@@ -32,15 +39,14 @@ class Wordle():
             and word.lower() == word and re.match(r"[a-zA-Z]{5}", word)
         })
         short_words = list(set(short_words_brown + short_words_guttenburg))
-        self.short_words = short_words
+        #self.short_words = short_words
+        self.short_words = list(set(short_words).difference(EXCLUSION_SET))
         self.make_frequency_series()
-        self.placement_counter = {
-            i: dict(Counter([word[i] for word in self.short_words]))
-            for i in range(5)
-        }
+
         self.use_anagrams = use_anagrams
 
-    @lru_cache()
+#  @lru_cache()
+
     def placement_score(self, word):
         return sum([
             self.placement_counter[i].get(letter, 0)
@@ -56,6 +62,10 @@ class Wordle():
         self.letter_rank_df = pd.DataFrame(letter_rank_series,
                                            columns=['frequency'
                                                     ]).reset_index()
+        self.placement_counter = {
+            i: dict(Counter([word[i] for word in self.short_words]))
+            for i in range(5)
+        }
 
     @lru_cache()
     def anagram_maker(self, letters, use_product=False):
@@ -73,13 +83,13 @@ class Wordle():
         match_and_position = [
             2 * int(letter == answer[i]) for i, letter in enumerate(guess)
         ]
-        #print(match_and_position)
+        #self.logger.debug(match_and_position)
 
         remaining_letters = [
             x for i, x in enumerate(answer) if match_and_position[i] != 2
         ]
 
-        #print(remaining_letters)
+        #self.logger.debug(remaining_letters)
 
         def find_non_position_match(remaining_letters, guess):
             """has to be a better way"""
@@ -93,11 +103,11 @@ class Wordle():
             return res
 
         non_position_match = find_non_position_match(remaining_letters, guess)
-        print(non_position_match)
+        #self.logger.debug(str(non_position_match))
         match_and_position = [
             x or y for x, y in zip(match_and_position, non_position_match)
         ]
-        #print(match_and_position)
+        #self.logger.debug(match_and_position)
         return [
             x for i, x in enumerate(guess)
             if match_and_position[i] == 0 and x not in self.answer
@@ -109,7 +119,7 @@ class Wordle():
         self.possible_letters = list('abcdefghijklmnopqrstuvwxyz')
         self.answer = answer
         self.good_letters = {}
-        self.partial_solution = []
+        self.partial_solution = {}
         self.guesses = []
         self.bad_position_dict = []
         self.success_grid = []
@@ -136,12 +146,13 @@ class Wordle():
         ])
         self.bad_position_dict = list(set(self.bad_position_dict))
         if bad_letters == 'Winner':
-            print('Winner')
+            self.logger.debug('Winner')
             return "Winner"
         for letter in bad_letters:
             if letter in self.possible_letters:
                 self.possible_letters.remove(letter)
-        print(f"Good letters New : {good_letters}, old {self.good_letters}")
+        self.logger.debug(
+            f"Good letters New : {good_letters}, old {self.good_letters}")
         if not self.good_letters:
             self.good_letters = Counter(good_letters)
         else:
@@ -157,16 +168,21 @@ class Wordle():
         #             for x in good_letters):
         #  self.good_letters.extend(good_letters)
 
-    #print(good_letters)
-        if len(position_tuples) > len(self.partial_solution):
-            self.partial_solution = position_tuples
+    #self.logger.debug(good_letters)
+        for x, y in position_tuples:
+            self.partial_solution[y] = x
 
-    @lru_cache()
+        self.logger.debug(f"partial solution {self.partial_solution}")
+
+
+#   @lru_cache()
+
     def coverage_guess(self, guess):
         return sum([self.score_dict[x] for x in set(guess)])
 
     def match_solution(self, guess):
-        return all(letter == guess[i] for letter, i in self.partial_solution)
+        return all(letter == guess[i]
+                   for i, letter in self.partial_solution.items())
 
     @staticmethod
     def check_duplicate_letters(word):
@@ -185,8 +201,7 @@ class Wordle():
                 x in self.possible_letters for x in word)
 
     def check_paradox_word(self, word):
-        """ensures the word has the right minimum count of the letters we know are in the word and 
-        no impossible letters"""
+        """ensures no known rejected letters are in the guess"""
         return all(x in self.possible_letters for x in word)
 
     def score_paradox_word(self, word, letters_it_could_be):
@@ -213,16 +228,18 @@ class Wordle():
             if self.match_solution(x) and self.check_possible_word(x)
             and self.check_bad_positions(x) and x not in self.guesses
         ]
-        if i <= 5 and ((sum(self.good_letters.values()) == 4
-                        and len(matching_short_words) > 2) or
-                       (len(self.partial_solution) == 3
-                        and len(matching_short_words) > 3)):
+        self.logger.debug(
+            f"there are {len(matching_short_words)} matching short words")
+        if 1 < i <= 5 and ((sum(self.good_letters.values()) >= 3
+                            and len(matching_short_words) > 2) or
+                           (len(self.partial_solution) == 3
+                            and len(matching_short_words) > 2) or
+                           (len(matching_short_words) > 4)):
 
-            #can we generalize this for partial solutions of 3?
             def get_sub_string(x, indices):
                 return ''.join(x[i] for i in indices)
 
-            indices_we_know = [x[1] for x in self.partial_solution]
+            indices_we_know = [x[1] for x in self.partial_solution.items()]
             missing_indices = [x for x in range(5) if x not in indices_we_know]
             letters_it_could_be = set(
                 flatten_list([
@@ -236,7 +253,7 @@ class Wordle():
             letters_it_could_be = list(
                 letters_it_could_be.intersection(set(self.possible_letters)))
 
-            print(
+            self.logger.debug(
                 f'paradox detected - possible letters {letters_it_could_be}, possible words are {matching_short_words[:10]}...'
             )
 
@@ -249,7 +266,9 @@ class Wordle():
                  if self.check_duplicate_letters(x) and x not in self.guesses],
                 key=lambda x: (x[1], x[2]),
                 reverse=True)
-            print(possible_guesses[:10])
+            #if len(letters_it_could_be) < len(matching_short_words):
+            #    possible_guesses = []
+            self.logger.debug(str(possible_guesses[:10]))
 
         if possible_guesses:
             ## zeroing out the other words in a paradox situation
@@ -269,26 +288,30 @@ class Wordle():
             i += 1
             guess_anagram, guess_word_list = self.generate_guess(i)
 
-            print(guess_word_list[:10], len(guess_word_list))
+            self.logger.debug(
+                f"{guess_word_list[:10]}, {len(guess_word_list)}")
             if guess_word_list:
                 guess = guess_word_list[0][0]
             else:
                 guess = guess_anagram[0][0]
+            if i == 1:
+                guess = 'tares'
             self.final_list_length = len(guess_word_list)
 
-            print(f"Guess is **{guess}**")
+            self.logger.debug(f"Guess is **{guess}**")
             out = self.evaluate_round(guess)
             if out == 'Winner':
-                ## need to turn this into an image somehow
+                full_output = ''
                 for line in self.success_grid:
-                    print(''.join([self.image_mapping_dict[x] for x in line]))
-                print(
-                    f"Luck factor {self.luck_factor or self.final_list_length}"
+                    full_output += (''.join(
+                        [self.image_mapping_dict[x] for x in line])) + '\n'
+                full_output += (
+                    f"Luck factor {self.luck_factor or self.final_list_length}\n"
                 )
-                print(f"Wordle {self.wordle_num} {i}/6")
+                full_output += (f"Wordle {self.wordle_num} {i}/6")
 
                 break
-        return i, guess
+        return i, guess, full_output
 
 
 class WordNetWordle(Wordle):
@@ -301,11 +324,17 @@ class WordNetWordle(Wordle):
         })
 
         self.short_words = list(set(self.short_words + more_short_words))
+        official_list = set(
+            pd.read_csv(
+                'https://gist.githubusercontent.com/b0o/27f3a61c7cb6f3791ffc483ebbf35d8a/raw/0cb120f6d2dd2734ded4b4d6e102600a613da43c/wordle-dictionary-full.txt',
+                header=None)[0].to_list())
+        self.short_words = list(
+            set(self.short_words).intersection(official_list))
         self.make_frequency_series()
 
 
 class WordListWordle(WordNetWordle):
-    def __init__(self):
+    def __init__(self, use_anagrams=False, log_level="DEBUG"):
         super().__init__()
         more_short_words = list({
             word
@@ -314,4 +343,13 @@ class WordListWordle(WordNetWordle):
         })
 
         self.short_words = list(set(self.short_words + more_short_words))
+        self.make_frequency_series()
+
+
+class WordleWordList(Wordle):
+    def __init__(self):
+        super().__init__()
+        self.short_words = pd.read_csv(
+            'https://gist.githubusercontent.com/b0o/27f3a61c7cb6f3791ffc483ebbf35d8a/raw/0cb120f6d2dd2734ded4b4d6e102600a613da43c/wordle-dictionary-full.txt',
+            header=None)[0].to_list()
         self.make_frequency_series()
