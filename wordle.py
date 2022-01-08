@@ -323,7 +323,7 @@ class Wordle():
                 break
         if remove_answer:
             self.short_words.remove(answer)
-        return i, guess, full_output
+        return i, guess, full_output, self.luck_factor or self.final_list_length
 
 
 class WordNetWordle(Wordle):
