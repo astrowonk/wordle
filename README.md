@@ -3,6 +3,8 @@
 
 This can not help you win a live game of [wordle](https://www.powerlanguage.co.uk/wordle/). It can algorithimically solve a wordle like puzzle only if you pass in a target word. In theory, it's making the optimal plays to maximize letter frequency and position frequency. So if you did better than the algorithm, you had some good luck! That is the purpose of this class, to - after the fact - compare one's performance against the algorithm.
 
+The algorithm does not know the target list from wordle which people have extracted from the source code. It does know the bigger allowed word list and uses that to restrict its guesses. I think knowing the words can only be from ~2000 words is apriori knowledge and cheating.
+
 It's sort of [a twitter bot](https://twitter.com/thewordlebot) now.
 
 Requires:
@@ -27,6 +29,12 @@ w.play_game('siege')
 w2 = WordNetWordle()
 w2.play_game('siege')
 ```
+
+## How it works
+
+The alg chooses a starting word based on letter frequency. It then looks at all valid words based on that initial guess. If it's too big (it usually is), its subsequent guesses are designed to eliminate as many letters as possible. It won't just guess a target word unless there are only a few. This means it is not optimized to solve fast, but to solve most words.
+
+There is a lot of parameter tuning that could probably be done on on exactly when it uses a 'wrong' word versus one that could be right.
 
 ## Statistics
 
