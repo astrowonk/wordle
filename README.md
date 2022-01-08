@@ -51,8 +51,12 @@ The `Wordle` class has the best overall performance, even on the longer 12,972 l
 * Success rate: 99.66%, (failures 44/12972)
 * Mean guesses: 3.965424 (on successes)
 
-The `WordNetWordle` with its bigger wordlist actually performs worse. And the `WordleWordList` mysteriously performs exactly the same... (only takes longer)
+The `WordNetWordle` with its bigger wordlist actually performs worse. 
 
 * Success Rate: 99.34%, (failures 85/12972)
 * Mean guesses: 4.091 
 
+`WordleWordList` performs by far the worst.
+
+* Success Rate: 96.1% (failures 505/12972)
+* Mean guesses 4.48
