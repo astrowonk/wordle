@@ -115,7 +115,7 @@ class Wordle():
             (x, i) for i, x in enumerate(guess) if match_and_position[i] > 1
         ], match_and_position
 
-    def init_game(self, answer):
+    def init_game(self, answer, guess_valid_only=False, force_init_guess=None):
         self.possible_letters = list('abcdefghijklmnopqrstuvwxyz')
         self.answer = answer
         self.good_letters = {}
@@ -126,6 +126,8 @@ class Wordle():
         self.luck_factor = None
         self.luck_factor_flag = 0
         self.final_list_length = None
+        self.guess_valid_only = guess_valid_only
+        self.force_init_guess = force_init_guess
 
     def evaluate_round(self, guess):
         self.guesses.append(guess)
@@ -211,30 +213,23 @@ class Wordle():
         return all(word[val] != key for key, val in self.bad_position_dict)
 
     def generate_guess(self, i=0):
-        #self.good_letters = list(set(self.good_letters))
-
-        possible_letters = self.good_letters
-        missing_length = 5 - len(possible_letters)
-        search_length = missing_length + 3
+        """generates a guess based on scoring the dictioray for letter and position coverage"""
         possible_guesses = []
-        other_letters = list(
-            self.letter_rank_df.query(
-                "index in @self.possible_letters and index not in @possible_letters"
-            ).head(search_length)['index'])
 
-        matching_short_words = [
-            (x, self.coverage_guess(x), self.placement_score(x))
-            for x in self.short_words
-            if self.match_solution(x) and self.check_possible_word(x)
-            and self.check_bad_positions(x) and x not in self.guesses
-        ]
+        matching_short_words = sorted(
+            [(x, self.coverage_guess(x), self.placement_score(x))
+             for x in self.short_words
+             if self.match_solution(x) and self.check_possible_word(x)
+             and self.check_bad_positions(x) and x not in self.guesses],
+            key=lambda x: (-x[1], -x[2])
+        )  #sorting on total coverage tie breaking with placement score
         self.logger.debug(
             f"there are {len(matching_short_words)} matching short words")
-        if 1 < i <= 5 and ((sum(self.good_letters.values()) >= 3
-                            and len(matching_short_words) > 2) or
-                           (len(self.partial_solution) == 3
-                            and len(matching_short_words) > 2) or
-                           (len(matching_short_words) > 4)):
+        if not self.guess_valid_only and (1 < i <= 5) and (
+            (sum(self.good_letters.values()) >= 3
+             and len(matching_short_words) > 2) or
+            (len(self.partial_solution) == 3 and len(matching_short_words) > 2)
+                or (len(matching_short_words) > 4)):
             #this line above is like hyperparameter tuning. What's the right
             #blend of parameters? And am I trying to avoid failure or
             # get the best average time to solution and accept more failures?
@@ -256,7 +251,7 @@ class Wordle():
                 letters_it_could_be.intersection(set(self.possible_letters)))
 
             self.logger.debug(
-                f'paradox detected - possible letters {letters_it_could_be}, possible words are {matching_short_words[:10]}...'
+                f'Too many valid solutions. Possible letters {letters_it_could_be}, possible words are {([x[0] for x in matching_short_words])[:10]}...'
             )
 
             def local_coverage(x):
@@ -276,12 +271,24 @@ class Wordle():
             ## zeroing out the other words in a paradox situation
             matching_short_words = []
 
-        return possible_guesses, sorted(matching_short_words,
-                                        key=lambda x: (-x[1], -x[2]))
+        return possible_guesses, matching_short_words
 
-    def play_game(self, answer, wordle_num=None):
-        assert answer in self.short_words, "answer not in short words"
-        self.init_game(answer)
+    def play_game(self,
+                  answer,
+                  wordle_num=None,
+                  guess_valid_only=False,
+                  force_init_guess=None):
+        #assert answer in self.short_words, "answer not in short words"
+        remove_answer = False
+        if answer not in self.short_words:
+            assert len(answer) == 5, "answer not 5 letters"
+            self.short_words.append(answer)
+            self.logger.debug(f"added {answer} temporarily to short words")
+            remove_answer = True
+
+        self.init_game(answer,
+                       guess_valid_only=guess_valid_only,
+                       force_init_guess=force_init_guess)
         self.wordle_num = ''
         if wordle_num:
             self.wordle_num = str(wordle_num)
@@ -296,8 +303,8 @@ class Wordle():
                 guess = guess_word_list[0][0]
             else:
                 guess = guess_anagram[0][0]
-            if i == 1:
-                guess = 'tares'
+            if i == 1 and self.force_init_guess:
+                guess = self.force_init_guess
             self.final_list_length = len(guess_word_list)
 
             self.logger.debug(f"Guess is **{guess}**")
@@ -313,6 +320,8 @@ class Wordle():
                 full_output += (f"Wordle {self.wordle_num} {i}/6")
 
                 break
+        if remove_answer:
+            self.short_words.remove(answer)
         return i, guess, full_output
 
 
