@@ -311,13 +311,14 @@ class Wordle():
             out = self.evaluate_round(guess)
             if out == 'Winner':
                 full_output = ''
+                full_output += (
+                    f"Wordlebot Wordle {self.wordle_num} {i}/6") + '\n\n'
                 for line in self.success_grid:
                     full_output += (''.join(
                         [self.image_mapping_dict[x] for x in line])) + '\n'
                 full_output += (
                     f"Luck factor {self.luck_factor or self.final_list_length}\n"
                 )
-                full_output += (f"Wordle {self.wordle_num} {i}/6")
 
                 break
         if remove_answer:

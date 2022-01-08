@@ -28,6 +28,26 @@ w2 = WordNetWordle()
 w2.play_game('siege')
 ```
 
-## Todo
+## Statistics
 
-* Its final guesses when words are very similar are based on letter frequency, not how common the word is.
+There are 3 versions (so far) of the algorithm that used different word lists. The original `Wordle` class used the gutenburg + brown corpuses from the [NLTK](https://www.nltk.org). There's also a version seeded with the WordNet corpus, and the actual valid+solution word list that wordle uses.
+
+The original `Wordle` class now removes any words not valid wordle guesses, as does the Wordnet version. That leaves us with word list lengths of:
+
+* Wordle (brown + gutenburg): 3602
+* WordnetWordle: 5519
+* WordleWordList: 12972
+
+The `Wordle` class has the best overall performance, even on the longer 12,972 list. The code now simply adds the target word to the short word list before solving.
+
+* Success rate: 99.66%, (failures 44/12972)
+* Mean guesses: 3.965424 (on successes)
+
+The `WordNetWordle` with its bigger wordlist actually performs worse:
+
+* Success Rate: 99.34%, (failures 85/12972)
+* Mean guesses: 4.091 
+
+Using the full wordle list (`WordleWordList`, that's not a great classname) is the worst (and the slowest):
+
+* Stats pending
