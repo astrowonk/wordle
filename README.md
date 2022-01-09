@@ -37,4 +37,4 @@ Also similar to the post above, I searched for an optimal starting word. However
 
 ## Todo
 
-* Get tweepy working, tweet automatically and 
+* Get tweepy working, tweet automatically and link to a log file the next day.
