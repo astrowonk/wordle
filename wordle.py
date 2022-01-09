@@ -13,9 +13,6 @@ from copy import deepcopy
 import concurrent.futures
 from tqdm.notebook import tqdm
 
-logging.basicConfig(format='%(asctime)s %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p')
-
 
 def flatten_list(list_of_lists):
     return [y for x in list_of_lists for y in x]
@@ -24,10 +21,13 @@ def flatten_list(list_of_lists):
 class Wordle():
     good_letters = None
 
-    def __init__(self, log_level="DEBUG"):
+    def __init__(self, log_level="DEBUG", log_file=None):
+
         self.logger = logging.getLogger(__name__)
         self.log_level = log_level
         self.logger.setLevel(log_level)
+        ch = logging.StreamHandler()
+        self.logger.addHandler(ch)
         self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
 
         short_words_guttenburg = list({
@@ -152,6 +152,8 @@ class Wordle():
         self.final_list_length = None
         self.guess_valid_only = guess_valid_only
         self.force_init_guess = force_init_guess
+        if force_init_guess not in self.short_words:
+            self.short_words.append(force_init_guess)
         self.allow_counter_factual = allow_counter_factual
 
     def evaluate_round(self, guess):
