@@ -103,6 +103,7 @@ class Wordle():
 
     @lru_cache()
     def score_word(self, guess, answer):
+        #print(guess, len(self.short_words))
         assert guess in self.short_words, 'guess not in short words'
         if guess == answer:
             return ["Winner"] * 3 + [[2, 2, 2, 2, 2]]
