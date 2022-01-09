@@ -10,6 +10,7 @@ from collections import Counter
 import pandas as pd
 from exclusions import EXCLUSION_SET
 import logging
+from copy import deepcopy
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -22,8 +23,9 @@ def flatten_list(list_of_lists):
 class Wordle():
     good_letters = None
 
-    def __init__(self, use_anagrams=False, log_level="DEBUG"):
+    def __init__(self, log_level="DEBUG"):
         self.logger = logging.getLogger(__name__)
+        self.log_level = log_level
         self.logger.setLevel(log_level)
         self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
 
@@ -43,9 +45,18 @@ class Wordle():
         self.short_words = list(set(short_words).difference(EXCLUSION_SET))
         self.make_frequency_series()
 
-        self.use_anagrams = use_anagrams
 
 #  @lru_cache()
+
+    def local_placement_score(self, word, possible_words):
+        placement_counter = {
+            i: dict(Counter([word[i] for word in possible_words]))
+            for i in range(5)
+        }
+        return sum([
+            placement_counter[i].get(letter, 0)
+            for i, letter in enumerate(word)
+        ])
 
     def placement_score(self, word):
         return sum([
@@ -130,7 +141,11 @@ class Wordle():
             (x, i) for i, x in enumerate(guess) if match_and_position[i] > 1
         ], match_and_position
 
-    def init_game(self, answer, guess_valid_only=False, force_init_guess=None):
+    def init_game(self,
+                  answer,
+                  guess_valid_only=False,
+                  force_init_guess=None,
+                  allow_counter_factual=False):
         self.possible_letters = list('abcdefghijklmnopqrstuvwxyz')
         self.answer = answer
         self.good_letters = {}
@@ -143,6 +158,7 @@ class Wordle():
         self.final_list_length = None
         self.guess_valid_only = guess_valid_only
         self.force_init_guess = force_init_guess
+        self.allow_counter_factual = allow_counter_factual
 
     def evaluate_round(self, guess):
         self.guesses.append(guess)
@@ -191,8 +207,20 @@ class Wordle():
 
         self.logger.debug(f"partial solution {self.partial_solution}")
 
+    def counter_factual_check(self, hypothetical_answer, limited_word_list):
+        res = {}
+        for word in set(limited_word_list).difference(self.guesses):
+            w = CounterFactual(deepcopy(self), hypothetical_answer)
+            w.evaluate_round(word)
+            res[word] = (len(w.make_matching_short_words()))
+        return res
 
-#   @lru_cache()
+    def counter_factual_guess(self, top_guess_candidates):
+        out = []
+        for word, _, _ in self.make_matching_short_words():
+            out.append(self.counter_factual_check(word, top_guess_candidates))
+        return pd.concat([pd.Series(x) for x in out],
+                         axis=1).T.mean().sort_values().head(1).index[0]
 
     def coverage_guess(self, guess):
         return sum([self.score_dict[x] for x in set(guess)])
@@ -227,17 +255,20 @@ class Wordle():
     def check_bad_positions(self, word):
         return all(word[val] != key for key, val in self.bad_position_dict)
 
-    def generate_guess(self, i=0):
-        """generates a guess based on scoring the dictioray for letter and position coverage"""
-        possible_guesses = []
-
-        matching_short_words = sorted(
+    def make_matching_short_words(self):
+        return sorted(
             [(x, self.coverage_guess(x), self.placement_score(x))
              for x in self.short_words
              if self.match_solution(x) and self.check_possible_word(x)
              and self.check_bad_positions(x) and x not in self.guesses],
             key=lambda x: (-x[1], -x[2])
         )  #sorting on total coverage tie breaking with placement score
+
+    def generate_guess(self, i=0):
+        """generates a guess based on scoring the dictioray for letter and position coverage"""
+        possible_guesses = []
+
+        matching_short_words = self.make_matching_short_words()
         self.logger.debug(
             f"there are {len(matching_short_words)} matching short words")
         if not self.guess_valid_only and (1 < i <= 5) and (
@@ -268,12 +299,21 @@ class Wordle():
             self.logger.debug(
                 f'Too many valid solutions. Possible letters {letters_it_could_be}, possible words are {([x[0] for x in matching_short_words])[:10]}...'
             )
+            just_words = [word for word, _, _ in matching_short_words]
+            local_score_dict = {
+                letter: sum([letter in word for word in just_words])
+                for letter in 'abcdefghijklmnopqrstuvwxyz'
+            }
+
+            #print(local_score_dict)
 
             def local_coverage(x):
                 return sum(letter in letters_it_could_be for letter in x)
 
             possible_guesses = sorted(
-                [(x, local_coverage(x), self.placement_score(x))
+                [(x, local_coverage(x),
+                  self.local_placement_score(
+                      x, [word for word, _, _ in matching_short_words]))
                  for x in self.short_words
                  if self.check_duplicate_letters(x) and x not in self.guesses],
                 key=lambda x: (x[1], x[2]),
@@ -285,6 +325,12 @@ class Wordle():
         if possible_guesses:
             ## zeroing out the other words in a paradox situation
             matching_short_words = []
+            try_these = [x[0] for x in possible_guesses][:25]
+            print(possible_guesses[:20])
+            if self.allow_counter_factual:
+                counter_factual_guess = self.counter_factual_guess(try_these)
+                possible_guesses = [[counter_factual_guess, 0, 0]]
+                self.logger.setLevel(self.log_level)
 
         return possible_guesses, matching_short_words
 
@@ -292,7 +338,8 @@ class Wordle():
                   answer,
                   wordle_num=None,
                   guess_valid_only=False,
-                  force_init_guess=None):
+                  force_init_guess=None,
+                  allow_counter_factual=True):
         #assert answer in self.short_words, "answer not in short words"
         remove_answer = False
         if answer not in self.short_words:
@@ -303,7 +350,8 @@ class Wordle():
 
         self.init_game(answer,
                        guess_valid_only=guess_valid_only,
-                       force_init_guess=force_init_guess)
+                       force_init_guess=force_init_guess,
+                       allow_counter_factual=allow_counter_factual)
         self.wordle_num = ''
         if wordle_num:
             self.wordle_num = str(wordle_num)
@@ -380,3 +428,14 @@ class WordleWordList(Wordle):
             'https://gist.githubusercontent.com/b0o/27f3a61c7cb6f3791ffc483ebbf35d8a/raw/0cb120f6d2dd2734ded4b4d6e102600a613da43c/wordle-dictionary-full.txt',
             header=None)[0].to_list()
         self.make_frequency_series()
+
+
+class CounterFactual(Wordle):
+    def __init__(self, WordleInstance, hypothesis_word):
+        self.__dict__.update(WordleInstance.__dict__)
+        self.init_game(hypothesis_word)
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel('INFO')
+
+    def init_game(self, answer):
+        self.answer = answer
