@@ -401,7 +401,7 @@ class Wordle():
 
 
 class WordNetWordle(Wordle):
-    def __init__(self):
+    def __init__(self, backtest=False):
         super().__init__()
         more_short_words = list({
             word
@@ -416,6 +416,9 @@ class WordNetWordle(Wordle):
                 header=None)[0].to_list())
         self.short_words = list(
             set(self.short_words).intersection(official_list))
+        ## adding in two missing previous wordle answers which...may or may not make it perform better.
+        if not backtest:  #only add these in if we're going forward on a new word, not when we're testing older words
+            self.short_words.extend(['hyper', 'unmet'])
         self.make_frequency_series()
 
 
