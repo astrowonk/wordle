@@ -15,12 +15,6 @@ Requires:
   
 I can probably ditch the pandas requirement but it made it easier.
 
-There are currently 2 subclasses and the parent class that use different corpuses. Some work better than others depending on the target word. For example `WordnetWordle` can get a hypothetical "wound" word in 6 guesses, but the guttenburg+brown corpuses take 7 tries.
-
-Wheras, the infamous `rebus` from Janury 1, 2022 doesn't exist in guttenburg+brown so one has to use one of the subclasses.
-
-I think the original `Wordle` class with its smaller word list generally performs best, but not always.
-
 ## Usage
 
 ```
@@ -33,31 +27,10 @@ w2.play_game('siege')
 
 ## How it works
 
-UPDATE: The alg now uses an idea from [Tyler Glaiel](https://medium.com/@tglaiel/the-mathematically-optimal-first-guess-in-wordle-cbcb03c19b0a) whereas the best guess isn't just one that covers the letter space but that, for every possible remaining answer, what guess on average would reduce the number of possiblities the most.
+The alg now uses an idea from [Tyler Glaiel](https://medium.com/@tglaiel/the-mathematically-optimal-first-guess-in-wordle-cbcb03c19b0a) whereas the best guess isn't just one that covers the letter space but that, for every possible remaining answer, what guess on average would reduce the number of possiblities the most.
 
-However, to speed this up I first generate a guess list simply by trying to cover the most letter space of unused letters. Then the top 25 of my old approach gets fed into the hypothetical statistical analysis to find the best. This adds a lot of runtime, but I believe now I have a 100% success rate on the entire 12000+ valid word list. All 44 words that the earlier version of the code struggled with can now be solved in 6 tries or left.
+However, to speed this up I first generate a guess list simply by trying to cover the most letter space of unused letters. This was how the alg worked previously. Then the top 25 of my old approach gets fed into the hypothetical statistical analysis to find the best guess.
 
-The alg chooses a starting word based on letter frequency. It then looks at all valid words based on that initial guess. If it's too big (it usually is), its subsequent guesses are designed to eliminate as many letters as possible. It won't just guess a target word unless there are only a few left. This means it is not optimized to solve fast, but to solve most words.
+The base `Wordle` class because of its limited NLTK dictionary can't solve all words. I think the default now will be the WordNetWordle class. If that fails I'll move onto the full 12000+ allowable word list.
 
-There is a lot of parameter tuning that could probably be done on on exactly when it uses a 'wrong' word versus one that could be right.
-
-## Statistics
-
-There are 3 versions (so far) of the algorithm that used different word lists. The original `Wordle` class used the gutenburg + brown corpuses from the [NLTK](https://www.nltk.org). There's also a version seeded with the WordNet corpus, and the actual valid+solution word list that wordle uses.
-
-The original `Wordle` class now removes any words not valid wordle guesses, as does the Wordnet version. That leaves us with word list lengths of:
-
-* Wordle (brown + gutenburg): 3602
-* WordnetWordle: 5519
-* WordleWordList: 12972
-
-The `Wordle` class has the best overall performance, even on the longer 12,972 list. The code now simply adds the target word to the short word list before solving.
-
-* Success rate: 99.66%, (failures 44/12972)
-* Mean guesses: 3.965424 (on successes)
-
-The `WordNetWordle` with its bigger wordlist actually performs worse. And the `WordleWordList` mysteriously performs exactly the same... (only takes longer)
-
-* Success Rate: 99.34%, (failures 85/12972)
-* Mean guesses: 4.091 
 
