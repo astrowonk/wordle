@@ -3,14 +3,15 @@ from nltk.corpus import words
 import nltk
 
 import re
-from functools import lru_cache
+from functools import partial, lru_cache
 from nltk.corpus import gutenberg, brown, wordnet, words
-from itertools import permutations, product
 from collections import Counter
 import pandas as pd
 from exclusions import EXCLUSION_SET
 import logging
 from copy import deepcopy
+import concurrent.futures
+from tqdm.notebook import tqdm
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -92,14 +93,6 @@ class Wordle():
             i: dict(Counter([word[i] for word in self.short_words]))
             for i in range(5)
         }
-
-    @lru_cache()
-    def anagram_maker(self, letters, use_product=False):
-        if use_product:
-            p = list({''.join(x) for x in product(letters, repeat=5)})
-        else:
-            p = list({''.join(x) for x in permutations(letters, r=5)})
-        return [x for x in p if x in self.short_words]
 
     @lru_cache()
     def score_word(self, guess, answer):
@@ -218,10 +211,24 @@ class Wordle():
 
     def counter_factual_guess(self, top_guess_candidates):
         out = []
-        for word, _, _ in self.make_matching_short_words():
-            out.append(self.counter_factual_check(word, top_guess_candidates))
-        return pd.concat([pd.Series(x) for x in out],
-                         axis=1).T.mean().sort_values().head(1).index[0]
+        #for word, _, _ in self.make_matching_short_words():
+        #    out.append(self.counter_factual_check(word, top_guess_candidates))
+
+        myfunc = partial(self.counter_factual_check,
+                         limited_word_list=top_guess_candidates)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
+            out = list(
+                tqdm(executor.map(
+                    myfunc,
+                    [word for word, _, _ in self.make_matching_short_words()]),
+                     total=len(self.make_matching_short_words())))
+
+        stats = pd.concat([pd.Series(x) for x in out],
+                          axis=1).T.mean().sort_values()
+        self.logger.setLevel(self.log_level)
+        self.logger.debug(
+            f"Solution reduction stats by word {stats.head(10).to_dict()}")
+        return stats.index[0]
 
     def coverage_guess(self, guess):
         return sum([self.score_dict[x] for x in set(guess)])
@@ -327,7 +334,7 @@ class Wordle():
             ## zeroing out the other words in a paradox situation
             matching_short_words = []
             try_these = [x[0] for x in possible_guesses][:25]
-            print(possible_guesses[:20])
+            #print(possible_guesses[:20])
             if self.allow_counter_factual:
                 counter_factual_guess = self.counter_factual_guess(try_these)
                 possible_guesses = [[counter_factual_guess, 0, 0]]
@@ -343,11 +350,12 @@ class Wordle():
                   allow_counter_factual=True):
         #assert answer in self.short_words, "answer not in short words"
         remove_answer = False
-        if answer not in self.short_words:
-            assert len(answer) == 5, "answer not 5 letters"
-            self.short_words.append(answer)
-            self.logger.debug(f"added {answer} temporarily to short words")
-            remove_answer = True
+        assert answer in self.short_words, "Can't solve with limited dictionary, use full dictionary"
+        # if answer not in self.short_words:
+        #     assert len(answer) == 5, "answer not 5 letters"
+        #     self.short_words.append(answer)
+        #     self.logger.debug(f"added {answer} temporarily to short words")
+        #     remove_answer = True
 
         self.init_game(answer,
                        guess_valid_only=guess_valid_only,
