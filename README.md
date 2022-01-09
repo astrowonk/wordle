@@ -4,7 +4,7 @@
 This can not help you win a live game of [wordle](https://www.powerlanguage.co.uk/wordle/). It can algorithimically solve a wordle like puzzle only if you pass in a target word. In theory, it's making the optimal plays to maximize letter frequency and position frequency. So if you did better than the algorithm, well done! But it exists for comparitive 
 use only, not to help people solve the puzzle. (There is no interface to give it feedback, it is designed to play against itself.)
 
-The algorithm does not know the target list from wordle which people have extracted from the source code. It use know the larger 12000+ allowed word list and uses that to restrict its guesses. I think knowing the words can only be from ~2000 words is apriori knowledge that a human wouldn't know. Whereas, the game dosen't penalize you for typing in a word that isn't in its dictionary, so any human could stumble across *aahe* or something as a guess.
+The algorithm does not know the target list from wordle which people have extracted from the source code. It use know the larger 12000+ allowed word list and uses that to restrict its guesses. I think knowing the words can only be from ~2000 words is apriori knowledge that a human wouldn't know. Whereas, the game dosen't penalize you for typing in a word that isn't in its dictionary, so any human could stumble across *aahed* or something as a guess.
 
 It's sort of [a twitter bot](https://twitter.com/thewordlebot) now.
 
