@@ -33,7 +33,11 @@ w2.play_game('siege')
 
 ## How it works
 
-The alg chooses a starting word based on letter frequency. It then looks at all valid words based on that initial guess. If it's too big (it usually is), its subsequent guesses are designed to eliminate as many letters as possible. It won't just guess a target word unless there are only a few. This means it is not optimized to solve fast, but to solve most words.
+UPDATE: The alg now uses an idea from [Tyler Glaiel](https://medium.com/@tglaiel/the-mathematically-optimal-first-guess-in-wordle-cbcb03c19b0a) whereas the best guess isn't just one that covers the letter space but that, for every possible remaining answer, what guess on average would reduce the number of possiblities the most.
+
+However, to speed this up I first generate a guess list simply by trying to cover the most letter space of unused letters. Then the top 25 of my old approach gets fed into the hypothetical statistical analysis to find the best. This adds a lot of runtime, but I believe now I have a 100% success rate on the entire 12000+ valid word list. All 44 words that the earlier version of the code struggled with can now be solved in 6 tries or left.
+
+The alg chooses a starting word based on letter frequency. It then looks at all valid words based on that initial guess. If it's too big (it usually is), its subsequent guesses are designed to eliminate as many letters as possible. It won't just guess a target word unless there are only a few left. This means it is not optimized to solve fast, but to solve most words.
 
 There is a lot of parameter tuning that could probably be done on on exactly when it uses a 'wrong' word versus one that could be right.
 
