@@ -314,12 +314,6 @@ class Wordle():
                 f'Too many valid solutions. Possible letters {letters_it_could_be}, possible words are {([x[0] for x in matching_short_words])[:10]}...'
             )
             just_words = [word for word, _, _ in matching_short_words]
-            local_score_dict = {
-                letter: sum([letter in word for word in just_words])
-                for letter in 'abcdefghijklmnopqrstuvwxyz'
-            }
-
-            #print(local_score_dict)
 
             def local_coverage(x):
                 return sum(letter in letters_it_could_be for letter in x)
@@ -332,12 +326,13 @@ class Wordle():
                  if self.check_duplicate_letters(x) and x not in self.guesses],
                 key=lambda x: (x[1], x[2]),
                 reverse=True)
-            #if len(letters_it_could_be) < len(matching_short_words):
-            #    possible_guesses = []
+
             self.logger.debug(str(possible_guesses[:10]))
 
         if possible_guesses:
             ## zeroing out the other words in a paradox situation
+
+            ## TODO clen this up since 'paradox' mode is now the normal model
             matching_short_words = []
             try_these = [x[0] for x in possible_guesses][:25]
             #print(possible_guesses[:20])
