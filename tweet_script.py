@@ -10,6 +10,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Wordle')
     parser.add_argument('target_word', type=str, help='target word')
     parser.add_argument('wordle_num', type=int, help='number of wordle')
+    parser.add_argument('--no-tweet',
+                        action='store_true',
+                        help='no tweet',
+                        default=True)
     args = parser.parse_args()
     log_file = f"wordle_{args.wordle_num}.txt"
 
@@ -33,7 +37,8 @@ if __name__ == '__main__':
         score, word, text, luck, word_list = w.play_game(
             args.target_word, args.wordle_num, force_init_guess=initial_guess)
         w.logger.setLevel(logging.CRITICAL)
-        response = api.create_tweet(text=text)
+        if not args.no_tweet:
+            response = api.create_tweet(text=text)
 
         history.update({
             args.wordle_num: {

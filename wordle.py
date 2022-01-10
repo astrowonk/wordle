@@ -71,8 +71,15 @@ class Wordle():
         ])
 
     def make_frequency_series(self):
+        lemma = nltk.WordNetLemmatizer()
+        #no plurals in the ~200 wordles so far, this is the simplest way to get rid of plurals
+
+        self.target_words = [
+            word for word in self.short_words
+            if (lemma.lemmatize(word) == word or not word.endswith('s'))
+        ]
         self.score_dict = {
-            letter: sum([letter in word for word in self.short_words])
+            letter: sum([letter in word for word in self.target_words])
             for letter in 'abcdefghijklmnopqrstuvwxyz'
         }
         letter_rank_series = pd.Series(
@@ -81,7 +88,7 @@ class Wordle():
                                            columns=['frequency'
                                                     ]).reset_index()
         self.placement_counter = {
-            i: dict(Counter([word[i] for word in self.short_words]))
+            i: dict(Counter([word[i] for word in self.target_words]))
             for i in range(5)
         }
 
@@ -272,7 +279,7 @@ class Wordle():
     def make_matching_short_words(self):
         return sorted(
             [(x, self.coverage_guess(x), self.placement_score(x))
-             for x in self.short_words
+             for x in self.target_words
              if self.match_solution(x) and self.check_possible_word(x)
              and self.check_bad_positions(x) and x not in self.guesses],
             key=lambda x: (-x[1], -x[2])
@@ -307,8 +314,11 @@ class Wordle():
             letters_it_could_be = letters_it_could_be.difference(
                 set(self.good_letters.keys()))
             #don't use any letters we know it can't be.
-            letters_it_could_be = list(
-                letters_it_could_be.intersection(set(self.possible_letters)))
+
+            #I think I should turn this off...not sure it's even doing anything.
+
+            #letters_it_could_be = list(
+            #    letters_it_could_be.intersection(set(self.possible_letters)))
 
             self.logger.debug(
                 f'Too many valid solutions. Possible letters {letters_it_could_be}, possible words are {([x[0] for x in matching_short_words])[:10]}...'
@@ -349,7 +359,7 @@ class Wordle():
                   force_init_guess=None,
                   allow_counter_factual=True):
         remove_answer = False
-        assert answer in self.short_words, "Can't solve with limited dictionary, use full dictionary"
+        assert answer in self.target_words, "Can't solve with limited dictionary, use full dictionary"
 
         self.init_game(answer,
                        guess_valid_only=guess_valid_only,
@@ -410,6 +420,8 @@ class WordNetWordle(Wordle):
         ## adding in two missing previous wordle answers which...may or may not make it perform better.
         if not backtest:  #only add these in if we're going forward on a new word, not when we're testing older words
             self.short_words.extend(['hyper', 'unmet'])
+        self.short_words = list(set(self.short_words + more_short_words))
+
         self.make_frequency_series()
 
 
@@ -422,7 +434,6 @@ class WordListWordle(WordNetWordle):
             and word.lower() == word and re.match(r"[a-zA-Z]{5}", word)
         })
 
-        self.short_words = list(set(self.short_words + more_short_words))
         self.make_frequency_series()
 
 
