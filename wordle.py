@@ -22,12 +22,9 @@ class Wordle():
     good_letters = None
 
     def __init__(self, log_level="DEBUG", log_file=None):
-
-        self.logger = logging.getLogger(__name__)
         self.log_level = log_level
-        self.logger.setLevel(log_level)
-        ch = logging.StreamHandler()
-        self.logger.addHandler(ch)
+        self.log_file = log_file
+        self.init_logging()
         self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
 
         short_words_guttenburg = list({
@@ -44,10 +41,17 @@ class Wordle():
         short_words = list(set(short_words_brown + short_words_guttenburg))
         #self.short_words = short_words
         self.short_words = list(set(short_words).difference(EXCLUSION_SET))
+
         self.make_frequency_series()
 
+    def init_logging(self):
+        self.logger = logging.getLogger(__name__)
+        self.log_level = self.log_level
+        self.logger.setLevel(self.log_level)
+        ch = logging.StreamHandler()
+        self.logger.addHandler(ch)
 
-#  @lru_cache()
+        #  @lru_cache()
 
     def local_placement_score(self, word, possible_words):
         placement_counter = {
@@ -152,7 +156,7 @@ class Wordle():
         self.final_list_length = None
         self.guess_valid_only = guess_valid_only
         self.force_init_guess = force_init_guess
-        if force_init_guess not in self.short_words:
+        if force_init_guess and force_init_guess not in self.short_words:
             self.short_words.append(force_init_guess)
         self.allow_counter_factual = allow_counter_factual
 
@@ -411,9 +415,8 @@ class WordNetWordle(Wordle):
 
         self.short_words = list(set(self.short_words + more_short_words))
         official_list = set(
-            pd.read_csv(
-                'https://gist.githubusercontent.com/b0o/27f3a61c7cb6f3791ffc483ebbf35d8a/raw/0cb120f6d2dd2734ded4b4d6e102600a613da43c/wordle-dictionary-full.txt',
-                header=None)[0].to_list())
+            pd.read_csv('wordle-dictionary-full.txt',
+                        header=None)[0].to_list())
         self.short_words = list(
             set(self.short_words).intersection(official_list))
         ## adding in two missing previous wordle answers which...may or may not make it perform better.
