@@ -210,7 +210,7 @@ class Wordle():
     def counter_factual_check(self, hypothetical_answer, limited_word_list):
         res = {}
         for word in set(limited_word_list).difference(self.guesses):
-            w = CounterFactual(deepcopy(self), hypothetical_answer)
+            w = CounterFactual(deepcopy(self.__dict__), hypothetical_answer)
             w.evaluate_round(word)
             res[word] = (len(w.make_matching_short_words()))
         return res
@@ -448,8 +448,8 @@ class WordleWordList(Wordle):
 
 
 class CounterFactual(Wordle):
-    def __init__(self, WordleInstance, hypothesis_word):
-        self.__dict__.update(WordleInstance.__dict__)
+    def __init__(self, wordle_dict, hypothesis_word):
+        self.__dict__.update(wordle_dict)
         self.init_game(hypothesis_word)
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel('INFO')
