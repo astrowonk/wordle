@@ -31,10 +31,35 @@ The alg now uses an idea from [Tyler Glaiel](https://medium.com/@tglaiel/the-mat
 
 However, to speed this up I first generate a guess list simply by trying to cover the most letter space of unused letters. This was how the alg worked previously. Then the top 25 of my old approach gets fed into the hypothetical statistical analysis to find the best guess.
 
-The base `Wordle` class because of its limited NLTK dictionary can't solve all words. I think the default now will be the `WordNetWordle` class. If that fails I'll move onto the full 12000+ allowable word list.
+The base `Wordle` class because of its limited NLTK dictionary can't solve all words. The default alg is the `WordNetWordle` class. If that fails I'll move onto the full 12000+ allowable word list.
 
-Also similar to the post above, I searched for an optimal starting word. However, since I am reluctant to use the ~2000 word target list, I searched the 500 best starting words based on my previous approach (on letter frequency and placement frequency) against all 12000 allowable words. That took 12 cores a few hours, but I found a word that on average reduces the remaining word choices the most. While the code is now too slow to test against all 12,000 words, based on the known 2022 actual Wordle words, the new starting word does find answers faster on average.
+Also similar to the post above, I searched for an optimal starting word. However, since I am reluctant to use the ~2000 word target list, I searched the 500 best starting words based on my previous approach (on letter frequency and placement frequency) against all 12000 allowable words. That took 12 cores a few hours, but I found a word that on average reduces the remaining word choices the most. While the code is now too slow to test against all 12,000 words, based on the known 2022 actual Wordle words, the new starting word does find answers slightly faster on average.
 
-## Todo
+## Statistics
 
-* Get tweepy working, tweet automatically and link to a log file the next day.
+I have run the latest version of the alg against the first 200 known Wordle words. 2 of those words aren't in the WordNet dictionary leaving 198. Those two words both are solved in 4 tries with the class based on the full ~12,000 word wordle dictionary.
+
+### Full alg with starting word from the above analysis:
+
+* Score of 3: 48
+* Score of 4: 123
+* Score of 5: 27
+
+### Alg with original code, based only on letter and position frequencies
+
+(Same starting word as above)
+
+* Score of 3: 42
+* Score of 4: 109
+* Score of 5: 40
+* Score of 6: 7
+
+### Original Code alg, with original starting word from letter/frequency analysis only:
+
+* Score of 3: 46
+* Score of 4: 108
+* Score of 5: 39
+* Score of 6: 4
+* Score of 7: 1
+
+
