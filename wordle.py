@@ -3,7 +3,7 @@ from nltk.corpus import words
 import nltk
 
 import re
-from functools import partial, lru_cache
+from functools import partial
 from nltk.corpus import gutenberg, brown, wordnet, words
 from collections import Counter
 import pandas as pd
@@ -48,8 +48,9 @@ class Wordle():
         self.logger = logging.getLogger(__name__)
         self.log_level = self.log_level
         self.logger.setLevel(self.log_level)
-        ch = logging.StreamHandler()
-        self.logger.addHandler(ch)
+        if self.log_file:
+            ch = logging.StreamHandler()
+            self.logger.addHandler(ch)
 
         #  @lru_cache()
 
@@ -98,7 +99,6 @@ class Wordle():
             for i in range(5)
         }
 
-    @lru_cache()
     def score_word(self, guess, answer):
         #print(guess, len(self.short_words))
         assert guess in self.short_words, 'guess not in short words'
@@ -401,7 +401,7 @@ class Wordle():
                 break
         if remove_answer:
             self.short_words.remove(answer)
-        return i, guess, full_output, self.luck_factor or self.final_list_length
+        return i, guess, full_output, self.luck_factor or self.final_list_length, self.guesses
 
 
 class WordNetWordle(Wordle):
