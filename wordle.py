@@ -335,7 +335,6 @@ class Wordle():
             ## TODO clen this up since 'paradox' mode is now the normal model
             matching_short_words = []
             try_these = [x[0] for x in possible_guesses][:25]
-            #print(possible_guesses[:20])
             if self.allow_counter_factual:
                 counter_factual_guess = self.counter_factual_guess(try_these)
                 possible_guesses = [[counter_factual_guess, 0, 0]]
@@ -349,14 +348,8 @@ class Wordle():
                   guess_valid_only=False,
                   force_init_guess=None,
                   allow_counter_factual=True):
-        #assert answer in self.short_words, "answer not in short words"
         remove_answer = False
         assert answer in self.short_words, "Can't solve with limited dictionary, use full dictionary"
-        # if answer not in self.short_words:
-        #     assert len(answer) == 5, "answer not 5 letters"
-        #     self.short_words.append(answer)
-        #     self.logger.debug(f"added {answer} temporarily to short words")
-        #     remove_answer = True
 
         self.init_game(answer,
                        guess_valid_only=guess_valid_only,
