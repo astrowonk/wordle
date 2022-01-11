@@ -20,6 +20,7 @@ def flatten_list(list_of_lists):
 
 class Wordle():
     good_letters = None
+    target_words = None
 
     def __init__(self, log_level="DEBUG", backtest=False, log_file=None):
         self.backtest = backtest
@@ -29,6 +30,9 @@ class Wordle():
         self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
         self.make_word_list()
         self.make_frequency_series()
+        self.logger.debug(
+            f"Wordle inited with {len(self.target_words)} target words and {len(self.short_words)} dictionary words"
+        )
 
     def make_word_list(self):
         short_words_guttenburg = list({
@@ -74,11 +78,11 @@ class Wordle():
     def make_frequency_series(self):
         lemma = nltk.WordNetLemmatizer()
         #no plurals in the ~200 wordles so far, this is the simplest way to get rid of plurals
-
-        self.target_words = [
-            word for word in self.short_words
-            if (lemma.lemmatize(word) == word or not word.endswith('s'))
-        ]
+        if not self.target_words:
+            self.target_words = [
+                word for word in self.short_words
+                if (lemma.lemmatize(word) == word or not word.endswith('s'))
+            ]
         self.score_dict = {
             letter: sum([letter in word for word in self.target_words])
             for letter in 'abcdefghijklmnopqrstuvwxyz'
@@ -429,7 +433,6 @@ class WordleWordList(Wordle):
         self.short_words = pd.read_csv(
             'https://gist.githubusercontent.com/b0o/27f3a61c7cb6f3791ffc483ebbf35d8a/raw/0cb120f6d2dd2734ded4b4d6e102600a613da43c/wordle-dictionary-full.txt',
             header=None)[0].to_list()
-        self.make_frequency_series()
 
 
 class CounterFactual(Wordle):
@@ -441,3 +444,43 @@ class CounterFactual(Wordle):
 
     def init_game(self, answer):
         self.answer = answer
+
+
+class WordNetWordle2(WordNetWordle):
+    def make_word_list(self):
+        super().make_word_list()
+        lemma = nltk.WordNetLemmatizer()
+        self.target_words = [
+            word for word in self.short_words
+            if (lemma.lemmatize(word) == word or not word.endswith('s'))
+        ]
+        #no plurals in the ~200 wordles so far, this is the simplest way to get rid of plurals
+        official_list = pd.read_csv('wordle-dictionary-full.txt',
+                                    header=None)[0].to_list()
+        self.short_words = official_list
+
+        ## adding in two missing previous wordle answers which...may or may not make it perform better.
+        if not self.backtest:  #only add these in if we're going forward on a new word, not when we're testing older words
+            # should I remove prev wordles or add them? Hmmm... maybe add to short_words and remove from target
+            self.short_words.extend(['hyper', 'unmet'])
+
+    def counter_factual_guess(self, top_guess_candidates):
+        out = []
+        #for word, _, _ in self.make_matching_short_words():
+        #    out.append(self.counter_factual_check(word, top_guess_candidates))
+
+        myfunc = partial(self.counter_factual_check,
+                         limited_word_list=top_guess_candidates)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
+            out = list(
+                tqdm(executor.map(
+                    myfunc,
+                    [word for word, _, _ in self.make_matching_short_words()]),
+                     total=len(self.make_matching_short_words())))
+
+        stats = pd.concat([pd.Series(x) for x in out],
+                          axis=1).T.quantile(.9).sort_values()
+        self.logger.setLevel(self.log_level)
+        self.logger.debug(
+            f"Solution reduction stats by word {stats.head(10).to_dict()}")
+        return stats.index[0]
