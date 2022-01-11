@@ -21,12 +21,16 @@ def flatten_list(list_of_lists):
 class Wordle():
     good_letters = None
 
-    def __init__(self, log_level="DEBUG", log_file=None):
+    def __init__(self, log_level="DEBUG", backtest=False, log_file=None):
+        self.backtest = backtest
         self.log_level = log_level
         self.log_file = log_file
         self.init_logging()
         self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
+        self.make_word_list()
+        self.make_frequency_series()
 
+    def make_word_list(self):
         short_words_guttenburg = list({
             word
             for word in gutenberg.words() if len(word) == 5
@@ -39,10 +43,7 @@ class Wordle():
             and word.lower() == word and re.match(r"[a-zA-Z]{5}", word)
         })
         short_words = list(set(short_words_brown + short_words_guttenburg))
-        #self.short_words = short_words
         self.short_words = list(set(short_words).difference(EXCLUSION_SET))
-
-        self.make_frequency_series()
 
     def init_logging(self):
         self.logger = logging.getLogger(__name__)
@@ -139,7 +140,6 @@ class Wordle():
         if guess == answer:
             return ["Winner"] * 3 + [[2, 2, 2, 2, 2]]
         match_and_position = self.get_num_line(guess, answer)
-        print(match_and_position)
         assert guess in self.short_words, 'guess not in short words'
         good_letters = [
             x for i, x in enumerate(guess) if match_and_position[i] > 0
@@ -210,14 +210,6 @@ class Wordle():
                 if val > self.good_letters[key]:
                     self.good_letters[key] = val
 
-        ##if len(good_letters) > len(self.good_letters):
-        #  self.good_letters = good_letters
-        #elif len(good_letters) > 0 and len(good_letters) < len(
-        #       self.good_letters) and not all(x in self.good_letters
-        #             for x in good_letters):
-        #  self.good_letters.extend(good_letters)
-
-    #self.logger.debug(good_letters)
         for x, y in position_tuples:
             self.partial_solution[y] = x
 
@@ -412,8 +404,8 @@ class Wordle():
 
 
 class WordNetWordle(Wordle):
-    def __init__(self, backtest=False):
-        super().__init__()
+    def make_word_list(self):
+        super().make_word_list()
         more_short_words = list({
             word
             for word in wordnet.words() if len(word) == 5
@@ -427,27 +419,13 @@ class WordNetWordle(Wordle):
         self.short_words = list(
             set(self.short_words).intersection(official_list))
         ## adding in two missing previous wordle answers which...may or may not make it perform better.
-        if not backtest:  #only add these in if we're going forward on a new word, not when we're testing older words
+        if not self.backtest:  #only add these in if we're going forward on a new word, not when we're testing older words
+            # should I remove prev wordles or add them? Hmmm... maybe add to short_words and remove from target
             self.short_words.extend(['hyper', 'unmet'])
-
-        self.make_frequency_series()
-
-
-class WordListWordle(WordNetWordle):
-    def __init__(self, use_anagrams=False, log_level="DEBUG"):
-        super().__init__()
-        more_short_words = list({
-            word
-            for word in words.words() if len(word) == 5
-            and word.lower() == word and re.match(r"[a-zA-Z]{5}", word)
-        })
-
-        self.make_frequency_series()
 
 
 class WordleWordList(Wordle):
-    def __init__(self):
-        super().__init__()
+    def make_word_list(self):
         self.short_words = pd.read_csv(
             'https://gist.githubusercontent.com/b0o/27f3a61c7cb6f3791ffc483ebbf35d8a/raw/0cb120f6d2dd2734ded4b4d6e102600a613da43c/wordle-dictionary-full.txt',
             header=None)[0].to_list()
