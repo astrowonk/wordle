@@ -35,7 +35,7 @@ if __name__ == '__main__':
     if args.wordle_num not in history:
         w = WordNetWordle()
         score, word, text, luck, word_list = w.play_game(
-            args.target_word, args.wordle_num, force_init_guess=initial_guess)
+            args.target_word, args.wordle_num)
         w.logger.setLevel(logging.CRITICAL)
         if not args.no_tweet:
             response = api.create_tweet(text=text)
