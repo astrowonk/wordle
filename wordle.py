@@ -106,11 +106,8 @@ class Wordle():
             for i in range(5)
         }
 
-    def score_word(self, guess, answer):
-        #print(guess, len(self.short_words))
-        assert guess in self.short_words, 'guess not in short words'
-        if guess == answer:
-            return ["Winner"] * 3 + [[2, 2, 2, 2, 2]]
+    def get_num_line(self, guess, answer):
+
         match_and_position = [
             2 * int(letter == answer[i]) for i, letter in enumerate(guess)
         ]
@@ -135,14 +132,25 @@ class Wordle():
 
         non_position_match = find_non_position_match(remaining_letters, guess)
         #self.logger.debug(str(non_position_match))
-        match_and_position = [
-            x or y for x, y in zip(match_and_position, non_position_match)
+        return [x or y for x, y in zip(match_and_position, non_position_match)]
+
+    def score_word(self, guess, answer):
+        #print(guess, len(self.short_words))
+        if guess == answer:
+            return ["Winner"] * 3 + [[2, 2, 2, 2, 2]]
+        match_and_position = self.get_num_line(guess, answer)
+        print(match_and_position)
+        assert guess in self.short_words, 'guess not in short words'
+        good_letters = [
+            x for i, x in enumerate(guess) if match_and_position[i] > 0
         ]
         #self.logger.debug(match_and_position)
-        return [
+        bad_letters = [
             x for i, x in enumerate(guess)
-            if match_and_position[i] == 0 and x not in self.answer
-        ], [x for i, x in enumerate(guess) if match_and_position[i] > 0], [
+            if match_and_position[i] == 0 and x not in good_letters
+        ]
+
+        return bad_letters, good_letters, [
             (x, i) for i, x in enumerate(guess) if match_and_position[i] > 1
         ], match_and_position
 
@@ -192,7 +200,8 @@ class Wordle():
             if letter in self.possible_letters:
                 self.possible_letters.remove(letter)
         self.logger.debug(
-            f"Good letters New : {good_letters}, old {self.good_letters}")
+            f"Good letters New : {good_letters}, old {self.good_letters}' bad letters {bad_letters}"
+        )
         if not self.good_letters:
             self.good_letters = Counter(good_letters)
         else:
