@@ -420,7 +420,6 @@ class WordNetWordle(Wordle):
         ## adding in two missing previous wordle answers which...may or may not make it perform better.
         if not backtest:  #only add these in if we're going forward on a new word, not when we're testing older words
             self.short_words.extend(['hyper', 'unmet'])
-        self.short_words = list(set(self.short_words + more_short_words))
 
         self.make_frequency_series()
 
