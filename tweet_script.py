@@ -13,7 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-tweet',
                         action='store_true',
                         help='no tweet',
-                        default=True)
+                        default=False)
     args = parser.parse_args()
     log_file = f"wordle_{args.wordle_num}.txt"
 
@@ -39,10 +39,13 @@ if __name__ == '__main__':
         w.logger.setLevel(logging.CRITICAL)
         if not args.no_tweet:
             response = api.create_tweet(text=text)
+            tweet_id = response.data['id']
+        else:
+            tweet_id = None
 
         history.update({
             args.wordle_num: {
-                'id': response.data['id'],
+                'id': tweet_id,
                 'score': score,
                 'word': word,
                 'text': text,
