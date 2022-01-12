@@ -244,7 +244,8 @@ class Wordle():
                      total=len(self.make_matching_short_words())))
 
         full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
-        stats = full_stats.mean().sort_values()
+        stats = full_stats.describe().T[['mean', 'std', 'max'
+                                         ]].sort_values(['mean', 'std', 'max'])
         self.logger.setLevel(self.log_level)
         self.logger.debug(
             f"Solution reduction stats by word {stats.head(10).to_dict()}")
@@ -303,7 +304,7 @@ class Wordle():
             (sum(self.good_letters.values()) >= 3
              and len(matching_short_words) > 2) or
             (len(self.partial_solution) == 3 and len(matching_short_words) > 2)
-                or (len(matching_short_words) > 4)):
+                or (len(matching_short_words) > 3)):
             #this line above is like hyperparameter tuning. What's the right
             #blend of parameters? And am I trying to avoid failure or
             # get the best average time to solution and accept more failures?
@@ -352,10 +353,19 @@ class Wordle():
             ## TODO clen this up since 'paradox' mode is now the normal model
             matching_short_words = []
             try_these = [x[0] for x in possible_guesses][:25]
+            orig_guess_df = pd.DataFrame(
+                possible_guesses[:25],
+                columns=['word', 'local_coverage',
+                         'local_placement']).set_index('word')
             if self.allow_counter_factual:
-                counter_factual_guess, _ = self.counter_factual_guess(
-                    try_these)
-                possible_guesses = [[counter_factual_guess.index[0], 0, 0]]
+                counter_factual_data, _ = self.counter_factual_guess(try_these)
+                res_df = orig_guess_df.join(counter_factual_data).sort_values(
+                    [
+                        'mean', 'std', 'max', 'local_coverage',
+                        'local_placement'
+                    ],
+                    ascending=[True, True, True, False, False])
+                possible_guesses = [[res_df.index[0], 0, 0]]
                 self.logger.setLevel(self.log_level)
 
         return possible_guesses, matching_short_words
