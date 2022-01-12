@@ -354,8 +354,8 @@ class Wordle():
             try_these = [x[0] for x in possible_guesses][:25]
             if self.allow_counter_factual:
                 counter_factual_guess, _ = self.counter_factual_guess(
-                    try_these).index[0]
-                possible_guesses = [[counter_factual_guess, 0, 0]]
+                    try_these)
+                possible_guesses = [[counter_factual_guess.index[0], 0, 0]]
                 self.logger.setLevel(self.log_level)
 
         return possible_guesses, matching_short_words
@@ -467,25 +467,25 @@ class WordNetWordle2(WordNetWordle):
             # should I remove prev wordles or add them? Hmmm... maybe add to short_words and remove from target
             self.short_words.extend(['hyper', 'unmet'])
 
-    def counter_factual_guess(self, top_guess_candidates):
-        out = []
-        #for word, _, _ in self.make_matching_short_words():
-        #    out.append(self.counter_factual_check(word, top_guess_candidates))
+    # def counter_factual_guess(self, top_guess_candidates):
+    #     out = []
+    #     #for word, _, _ in self.make_matching_short_words():
+    #     #    out.append(self.counter_factual_check(word, top_guess_candidates))
 
-        myfunc = partial(self.counter_factual_check,
-                         limited_word_list=top_guess_candidates)
-        with concurrent.futures.ProcessPoolExecutor(
-                max_workers=self.max_workers) as executor:
-            out = list(
-                tqdm(executor.map(
-                    myfunc,
-                    [word for word, _, _ in self.make_matching_short_words()]),
-                     total=len(self.make_matching_short_words())))
+    #     myfunc = partial(self.counter_factual_check,
+    #                      limited_word_list=top_guess_candidates)
+    #     with concurrent.futures.ProcessPoolExecutor(
+    #             max_workers=self.max_workers) as executor:
+    #         out = list(
+    #             tqdm(executor.map(
+    #                 myfunc,
+    #                 [word for word, _, _ in self.make_matching_short_words()]),
+    #                  total=len(self.make_matching_short_words())))
 
-        full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
-        stats = full_stats.quantile(.9).sort_values()
-        self.logger.setLevel(self.log_level)
-        self.logger.debug(
-            f"Solution reduction stats 90th percentile by word {stats.head(10).to_dict()}"
-        )
-        return stats, full_stats
+    #     full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
+    #     stats = full_stats.quantile(.9).sort_values()
+    #     self.logger.setLevel(self.log_level)
+    #     self.logger.debug(
+    #         f"Solution reduction stats 90th percentile by word {stats.head(10).to_dict()}"
+    #     )
+    #     return stats, full_stats
