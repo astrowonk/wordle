@@ -19,6 +19,7 @@ def flatten_list(list_of_lists):
 
 
 class Wordle():
+    max_workers = 8
     good_letters = None
     target_words = None
 
@@ -234,19 +235,20 @@ class Wordle():
 
         myfunc = partial(self.counter_factual_check,
                          limited_word_list=top_guess_candidates)
-        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=self.max_workers) as executor:
             out = list(
                 tqdm(executor.map(
                     myfunc,
                     [word for word, _, _ in self.make_matching_short_words()]),
                      total=len(self.make_matching_short_words())))
 
-        stats = pd.concat([pd.Series(x) for x in out],
-                          axis=1).T.mean().sort_values()
+        full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
+        stats = full_stats.mean().sort_values()
         self.logger.setLevel(self.log_level)
         self.logger.debug(
             f"Solution reduction stats by word {stats.head(10).to_dict()}")
-        return stats.index[0]
+        return stats, full_stats
 
     def coverage_guess(self, guess):
         return sum([self.score_dict[x] for x in set(guess)])
@@ -351,7 +353,8 @@ class Wordle():
             matching_short_words = []
             try_these = [x[0] for x in possible_guesses][:25]
             if self.allow_counter_factual:
-                counter_factual_guess = self.counter_factual_guess(try_these)
+                counter_factual_guess, _ = self.counter_factual_guess(
+                    try_these).index[0]
                 possible_guesses = [[counter_factual_guess, 0, 0]]
                 self.logger.setLevel(self.log_level)
 
@@ -471,16 +474,18 @@ class WordNetWordle2(WordNetWordle):
 
         myfunc = partial(self.counter_factual_check,
                          limited_word_list=top_guess_candidates)
-        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=self.max_workers) as executor:
             out = list(
                 tqdm(executor.map(
                     myfunc,
                     [word for word, _, _ in self.make_matching_short_words()]),
                      total=len(self.make_matching_short_words())))
 
-        stats = pd.concat([pd.Series(x) for x in out],
-                          axis=1).T.quantile(.9).sort_values()
+        full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
+        stats = full_stats.quantile(.9).sort_values()
         self.logger.setLevel(self.log_level)
         self.logger.debug(
-            f"Solution reduction stats by word {stats.head(10).to_dict()}")
-        return stats.index[0]
+            f"Solution reduction stats 90th percentile by word {stats.head(10).to_dict()}"
+        )
+        return stats, full_stats
