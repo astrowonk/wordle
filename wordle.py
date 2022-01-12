@@ -22,6 +22,7 @@ class Wordle():
     max_workers = 8
     good_letters = None
     target_words = None
+    top_guess_count = 25
 
     def __init__(self, log_level="DEBUG", backtest=False, log_file=None):
         self.backtest = backtest
@@ -248,7 +249,8 @@ class Wordle():
                                          ]].sort_values(['mean', 'std', 'max'])
         self.logger.setLevel(self.log_level)
         self.logger.debug(
-            f"Solution reduction stats by word {stats.head(10).to_dict()}")
+            f"Solution reduction stats by word {stats.head(10).reset_index().to_dict(orient='records')}"
+        )
         return stats, full_stats
 
     def coverage_guess(self, guess):
@@ -352,9 +354,9 @@ class Wordle():
 
             ## TODO clen this up since 'paradox' mode is now the normal model
             matching_short_words = []
-            try_these = [x[0] for x in possible_guesses][:25]
+            try_these = [x[0] for x in possible_guesses][:self.top_guess_count]
             orig_guess_df = pd.DataFrame(
-                possible_guesses[:25],
+                possible_guesses[:self.top_guess_count],
                 columns=['word', 'local_coverage',
                          'local_placement']).set_index('word')
             if self.allow_counter_factual:
@@ -367,6 +369,8 @@ class Wordle():
                     ascending=[True, True, True, False, False])
                 possible_guesses = [[res_df.index[0], 0, 0]]
                 self.logger.setLevel(self.log_level)
+            # self.logger.debug(
+            #     f"Counter factual data {res_df.to_json(indent=4)}")
 
         return possible_guesses, matching_short_words
 
@@ -460,6 +464,8 @@ class CounterFactual(Wordle):
 
 
 class WordNetWordle2(WordNetWordle):
+    top_guess_count = 40
+
     def make_word_list(self):
         super().make_word_list()
         lemma = nltk.WordNetLemmatizer()
@@ -473,9 +479,6 @@ class WordNetWordle2(WordNetWordle):
         self.short_words = official_list
 
         ## adding in two missing previous wordle answers which...may or may not make it perform better.
-        if not self.backtest:  #only add these in if we're going forward on a new word, not when we're testing older words
-            # should I remove prev wordles or add them? Hmmm... maybe add to short_words and remove from target
-            self.short_words.extend(['hyper', 'unmet'])
 
     # def counter_factual_guess(self, top_guess_candidates):
     #     out = []
