@@ -304,7 +304,7 @@ class Wordle():
             (sum(self.good_letters.values()) >= 3
              and len(matching_short_words) > 2) or
             (len(self.partial_solution) == 3 and len(matching_short_words) > 2)
-                or (len(matching_short_words) > 3)):
+                or (len(matching_short_words) > 2)):
             #this line above is like hyperparameter tuning. What's the right
             #blend of parameters? And am I trying to avoid failure or
             # get the best average time to solution and accept more failures?
