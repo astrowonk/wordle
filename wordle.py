@@ -180,6 +180,7 @@ class Wordle():
         if force_init_guess and force_init_guess not in self.short_words:
             self.short_words.append(force_init_guess)
         self.allow_counter_factual = allow_counter_factual
+        self.remaining_words = self.target_words
 
     def evaluate_round(self, guess):
         self.guesses.append(guess)
@@ -289,7 +290,7 @@ class Wordle():
     def make_matching_short_words(self):
         return sorted(
             [(x, self.coverage_guess(x), self.placement_score(x))
-             for x in self.target_words
+             for x in self.remaining_words
              if self.match_solution(x) and self.check_possible_word(x)
              and self.check_bad_positions(x) and x not in self.guesses],
             key=lambda x: (-x[1], -x[2])
@@ -300,6 +301,7 @@ class Wordle():
         possible_guesses = []
 
         matching_short_words = self.make_matching_short_words()
+        self.remaining_words = [x[0] for x in matching_short_words]
         self.logger.debug(
             f"there are {len(matching_short_words)} matching short words")
         if not self.guess_valid_only and (1 < i <= 5) and (
