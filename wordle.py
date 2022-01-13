@@ -246,13 +246,10 @@ class Wordle():
                      total=len(self.make_matching_short_words())))
 
         full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
-        stats = full_stats.describe().T[['mean', 'std', 'max'
-                                         ]].sort_values(['mean', 'std', 'max'])
+
         self.logger.setLevel(self.log_level)
-        self.logger.debug(
-            f"Solution reduction stats by word {stats.head(10).reset_index().to_dict(orient='records')}"
-        )
-        return stats, full_stats
+
+        return full_stats
 
     def coverage_guess(self, guess):
         return sum([self.score_dict[x] for x in set(guess)])
@@ -362,19 +359,24 @@ class Wordle():
                 columns=['word', 'local_coverage',
                          'local_placement']).set_index('word')
             if self.allow_counter_factual:
-                counter_factual_data, _ = self.counter_factual_guess(try_these)
-                res_df = orig_guess_df.join(counter_factual_data).sort_values(
-                    [
-                        'mean', 'std', 'max', 'local_coverage',
-                        'local_placement'
-                    ],
-                    ascending=[True, True, True, False, False])
-                possible_guesses = [[res_df.index[0], 0, 0]]
+                full_data = self.counter_factual_guess(try_these)
+                guess = self.determine_final_guess(full_data, orig_guess_df)
+
+                possible_guesses = [[guess, 0, 0]]
                 self.logger.setLevel(self.log_level)
             # self.logger.debug(
             #     f"Counter factual data {res_df.to_json(indent=4)}")
 
         return possible_guesses, matching_short_words
+
+    def determine_final_guess(self, counter_factual_data, orig_guess_df):
+        summary_stats = counter_factual_data.describe().T[[
+            'mean', 'std', 'max'
+        ]].sort_values(['mean', 'std', 'max'])
+        res_df = orig_guess_df.join(summary_stats).sort_values(
+            ['mean', 'std', 'max', 'local_coverage', 'local_placement'],
+            ascending=[True, True, True, False, False])
+        return res_df.index[0]
 
     def play_game(self,
                   answer,
@@ -479,28 +481,3 @@ class WordNetWordle2(WordNetWordle):
         official_list = pd.read_csv('wordle-dictionary-full.txt',
                                     header=None)[0].to_list()
         self.short_words = official_list
-
-        ## adding in two missing previous wordle answers which...may or may not make it perform better.
-
-    # def counter_factual_guess(self, top_guess_candidates):
-    #     out = []
-    #     #for word, _, _ in self.make_matching_short_words():
-    #     #    out.append(self.counter_factual_check(word, top_guess_candidates))
-
-    #     myfunc = partial(self.counter_factual_check,
-    #                      limited_word_list=top_guess_candidates)
-    #     with concurrent.futures.ProcessPoolExecutor(
-    #             max_workers=self.max_workers) as executor:
-    #         out = list(
-    #             tqdm(executor.map(
-    #                 myfunc,
-    #                 [word for word, _, _ in self.make_matching_short_words()]),
-    #                  total=len(self.make_matching_short_words())))
-
-    #     full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
-    #     stats = full_stats.quantile(.9).sort_values()
-    #     self.logger.setLevel(self.log_level)
-    #     self.logger.debug(
-    #         f"Solution reduction stats 90th percentile by word {stats.head(10).to_dict()}"
-    #     )
-    #     return stats, full_stats
