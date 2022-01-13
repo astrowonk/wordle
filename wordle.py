@@ -370,6 +370,8 @@ class Wordle():
         return possible_guesses, matching_short_words
 
     def determine_final_guess(self, counter_factual_data, orig_guess_df):
+        """what statistic should determine the next guess. This uses mean, but
+        argument could be made to alwasy minimize the max"""
         summary_stats = counter_factual_data.describe().T[[
             'mean', 'std', 'max'
         ]].sort_values(['mean', 'std', 'max'])
