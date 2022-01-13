@@ -378,6 +378,10 @@ class Wordle():
         res_df = orig_guess_df.join(summary_stats).sort_values(
             ['mean', 'std', 'max', 'local_coverage', 'local_placement'],
             ascending=[True, True, True, False, False])
+        self.logger.debug(
+            f"Solution reduction stats by word {res_df.head(10).reset_index().to_dict(orient='records')}"
+        )
+
         return res_df.index[0]
 
     def play_game(self,
@@ -483,3 +487,19 @@ class WordNetWordle2(WordNetWordle):
         official_list = pd.read_csv('wordle-dictionary-full.txt',
                                     header=None)[0].to_list()
         self.short_words = official_list
+
+
+class WordNetMinMix(WordNetWordle):
+    def determine_final_guess(self, counter_factual_data, orig_guess_df):
+        """what statistic should determine the next guess. This mins the max"""
+        summary_stats = counter_factual_data.describe().T[[
+            'mean', 'std', 'max'
+        ]].sort_values(['mean', 'std', 'max'])
+        res_df = orig_guess_df.join(summary_stats).sort_values(
+            ['max', 'std', 'mean', 'local_coverage', 'local_placement'],
+            ascending=[True, True, True, False, False])
+        self.logger.debug(
+            f"Solution reduction stats by word {res_df.head(10).reset_index().to_dict(orient='records')}"
+        )
+
+        return res_df.index[0]
