@@ -348,6 +348,15 @@ class Wordle():
 
             self.logger.debug(str(possible_guesses[:10]))
 
+        elif i == 1:
+            possible_guesses = sorted(
+                [(x, self.coverage_guess(x), self.placement_score(x))
+                 for x in self.short_words
+                 if self.match_solution(x) and self.check_possible_word(x)
+                 and self.check_bad_positions(x) and x not in self.guesses],
+                key=lambda x: (-x[1], -x[2])
+            )  #sorting on total coverage tie breaking with placement score
+
         if possible_guesses:
             ## zeroing out the other words in a paradox situation
 
@@ -358,7 +367,7 @@ class Wordle():
                 possible_guesses[:self.top_guess_count],
                 columns=['word', 'local_coverage',
                          'local_placement']).set_index('word')
-            if self.allow_counter_factual:
+            if self.allow_counter_factual and i > 1:
                 full_data = self.counter_factual_guess(try_these)
                 guess = self.determine_final_guess(full_data, orig_guess_df)
 
