@@ -7,6 +7,7 @@ use only, not to help people solve the puzzle. (There is no interface to give it
 The algorithm **does not know the target list from wordle** which people have extracted from the source code. It uses the larger 12000+ allowed word list to restrict its guesses. I think knowing the words can only be from ~2000 words is apriori knowledge that a human wouldn't know. Whereas, the game dosen't penalize you for typing in a word that isn't in its dictionary, so any human could stumble across *aahed* or something as a guess.
 
 As of 2022-Jan-15, my target word list is as follows:
+
     * The five letter words of the brown, gutenburg, and WordNet corpuses.
     * Filter out plural nouns with `nltk` lemmatizer. 
     * Filter out words not in the five letter [GloVe](https://nlp.stanford.edu/projects/glove/) common crawl dictionary.
