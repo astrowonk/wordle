@@ -1,6 +1,4 @@
-from nltk.corpus import words
-
-import nltk
+from nltk import WordNetLemmatizer
 
 import re
 from functools import partial
@@ -10,7 +8,7 @@ import pandas as pd
 from exclusions import EXCLUSION_SET
 import logging
 from copy import deepcopy
-import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor
 from tqdm.notebook import tqdm
 
 
@@ -78,7 +76,7 @@ class Wordle():
         ])
 
     def make_frequency_series(self):
-        lemma = nltk.WordNetLemmatizer()
+        lemma = WordNetLemmatizer()
         #no plurals in the ~200 wordles so far, this is the simplest way to get rid of plurals
         if not self.target_words:
             self.target_words = [
@@ -181,6 +179,7 @@ class Wordle():
             self.short_words.append(force_init_guess)
         self.allow_counter_factual = allow_counter_factual
         self.remaining_words = self.target_words
+        self.augmented_guess_count = 0
 
     def evaluate_round(self, guess):
         self.guesses.append(guess)
@@ -225,7 +224,11 @@ class Wordle():
     def counter_factual_check(self, hypothetical_answer, limited_word_list):
         res = {}
         for word in set(limited_word_list).difference(self.guesses):
-            w = CounterFactual(deepcopy(self.__dict__), hypothetical_answer)
+            w = CounterFactual(
+                deepcopy({
+                    key: val
+                    for key, val in self.__dict__.items() if key != 'v'
+                }), hypothetical_answer)
             w.evaluate_round(word)
             res[word] = (len(w.make_matching_short_words()))
         return res
@@ -237,8 +240,7 @@ class Wordle():
 
         myfunc = partial(self.counter_factual_check,
                          limited_word_list=top_guess_candidates)
-        with concurrent.futures.ProcessPoolExecutor(
-                max_workers=self.max_workers) as executor:
+        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             out = list(
                 tqdm(executor.map(
                     myfunc,
@@ -293,14 +295,16 @@ class Wordle():
             key=lambda x: (-x[1], -x[2])
         )  #sorting on total coverage tie breaking with placement score
 
-    def generate_guess(self, i=0):
+    def generate_guess(self, i=0, augmented_guesses=None):
         """generates a guess based on scoring the dictioray for letter and position coverage"""
         possible_guesses = []
 
         matching_short_words = self.make_matching_short_words()
         self.remaining_words = [x[0] for x in matching_short_words]
+        just_words = [word for word, _, _ in matching_short_words]
+
         self.logger.debug(
-            f"there are {len(matching_short_words)} matching short words round {i}"
+            f"there are {len(matching_short_words)} matching short words: {just_words[:10]}"
         )
         if not self.guess_valid_only and (1 < i <= 5) and (
             (sum(self.good_letters.values()) >= 3
@@ -333,7 +337,6 @@ class Wordle():
             self.logger.debug(
                 f'Too many valid solutions. Possible letters {letters_it_could_be}, possible words are {([x[0] for x in matching_short_words])[:10]}...'
             )
-            just_words = [word for word, _, _ in matching_short_words]
 
             def local_coverage(x):
                 return sum(letter in letters_it_could_be for letter in x)
@@ -346,8 +349,6 @@ class Wordle():
                  if self.check_duplicate_letters(x) and x not in self.guesses],
                 key=lambda x: (x[1], x[2]),
                 reverse=True)
-
-            self.logger.debug(str(possible_guesses[:10]))
 
         elif i == 1:
             possible_guesses = sorted(
@@ -367,13 +368,29 @@ class Wordle():
             ## TODO clen this up since 'paradox' mode is now the normal model
             matching_short_words = []
             try_these = [x[0] for x in possible_guesses][:self.top_guess_count]
+
             orig_guess_df = pd.DataFrame(
                 possible_guesses[:self.top_guess_count],
                 columns=['word', 'local_coverage',
                          'local_placement']).set_index('word')
             if self.allow_counter_factual and i > 1:
+
+                if augmented_guesses:
+                    new_guesses = sorted(
+                        list(
+                            set(augmented_guesses).difference(set(try_these))))
+                    self.logger.debug(f"new augmented guesses {new_guesses}")
+
+                    try_these = (list(set(try_these + augmented_guesses)))
+                    self.logger.debug(
+                        f"total augmented length {len(try_these)}")
                 full_data = self.counter_factual_guess(try_these)
                 guess = self.determine_final_guess(full_data, orig_guess_df)
+                if augmented_guesses:
+                    if guess in new_guesses:
+                        self.logger.debug(
+                            f"guess {guess} is in augmented guesse")
+                        self.augmented_guess_count += 1
 
                 possible_guesses = [[guess, 0, 0]]
                 self.logger.setLevel(self.log_level)
@@ -381,6 +398,12 @@ class Wordle():
             #     f"Counter factual data {res_df.to_json(indent=4)}")
 
         return possible_guesses, matching_short_words
+
+    def augment_guesses(self, possible_guesses):
+        """
+        empty in base class
+        """
+        return possible_guesses
 
     def determine_final_guess(self, counter_factual_data, orig_guess_df):
         """what statistic should determine the next guess. This uses mean, but
@@ -478,6 +501,7 @@ class WordleWordList(Wordle):
 class CounterFactual(Wordle):
     def __init__(self, wordle_dict, hypothesis_word):
         self.__dict__.update(wordle_dict)
+        assert 'v' not in self.__dict__.keys(), 'what is this?'
         self.init_game(hypothesis_word)
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel('INFO')
@@ -491,7 +515,7 @@ class WordNetWordle2(WordNetWordle):
 
     def make_word_list(self):
         super().make_word_list()
-        lemma = nltk.WordNetLemmatizer()
+        lemma = WordNetLemmatizer()
         self.target_words = [
             word for word in self.short_words
             if (lemma.lemmatize(word) == word or not word.endswith('s'))
@@ -500,6 +524,14 @@ class WordNetWordle2(WordNetWordle):
         official_list = pd.read_csv('wordle-dictionary-full.txt',
                                     header=None)[0].to_list()
         self.short_words = official_list
+        self.target_words = list(
+            set(self.target_words).intersection(set(official_list)))
+
+        common_words = set(
+            pd.read_csv('glove_five_letter_common.csv',
+                        header=None)[0].to_list())
+        self.target_words = list(
+            set(self.target_words).intersection(set(common_words)))
 
 
 class WordNetMinMix(WordNetWordle):
