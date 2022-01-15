@@ -1,4 +1,4 @@
-from wordle import WordNetWordle
+from wordle import WordNetWordle2
 import argparse
 import logging
 from config import *
@@ -33,7 +33,7 @@ if __name__ == '__main__':
                         access_token_secret=access_token_secret)
 
     if args.wordle_num not in history:
-        w = WordNetWordle()
+        w = WordNetWordle2()
         score, word, text, luck, word_list = w.play_game(
             args.target_word, args.wordle_num, force_init_guess=initial_guess)
         w.logger.setLevel(logging.CRITICAL)
