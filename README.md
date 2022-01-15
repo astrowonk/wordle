@@ -6,7 +6,14 @@ use only, not to help people solve the puzzle. (There is no interface to give it
 
 The algorithm **does not know the target list from wordle** which people have extracted from the source code. It uses the larger 12000+ allowed word list to restrict its guesses. I think knowing the words can only be from ~2000 words is apriori knowledge that a human wouldn't know. Whereas, the game dosen't penalize you for typing in a word that isn't in its dictionary, so any human could stumble across *aahed* or something as a guess.
 
-The [Twitter bot](https://twitter.com/thewordlebot) is a work in progress.
+As of 2022-Jan-15, my target word list is as follows:
+    * The five letter words of the brown, gutenburg, and WordNet corpuses.
+    * Filter out plural nouns with `nltk` lemmatizer. 
+    * Filter out words not in the five letter [GloVe](https://nlp.stanford.edu/projects/glove/) common crawl dictionary.
+      * I filtered this with some sort of spelling dictionary for [another project](https://github.com/astrowonk/divergent-association-task), I believe the hunspell spelling dictionary. So I used the filtered dictionary I made there.
+      * Since this is in theory in order of frequency I thought about a cutoff around 2500 or so but wordle 37 (`unfed`), ranks 5084 on the GloVe list so I'm probably pushing my luck filtering these words out as it is.
+
+The [Twitter bot](https://twitter.com/thewordlebot) mostly works now.
 
 Requires:
 
@@ -37,22 +44,11 @@ Also similar to the post above, I searched for an optimal starting word. However
 
 ## Statistics
 
-I have run the latest version of the alg against the first 200 known Wordle words. 2 of those words aren't in the WordNet dictionary leaving 198. Those two words both are solved in 4 tries with the class based on the full ~12,000 word wordle dictionary.
+I have run the latest version of the alg against the first ~200 known Wordle words. 2 of those words aren't in my dictionary. Those two words both are solved in 4 tries with the class with the full ~12,000 word wordle dictionary as target and allowed.
 
-### Full alg with starting word from the above analysis:
+### Full latest alg with starting word from the above analysis:
 
-* Score of 3: 48
-* Score of 4: 123
-* Score of 5: 27
-
-### Alg with original code, based only on letter and position frequencies
-
-(Same starting word as above)
-
-* Score of 3: 42
-* Score of 4: 109
-* Score of 5: 40
-* Score of 6: 7
+* TK
 
 ### Original Code alg, with original starting word from letter/frequency analysis only:
 
