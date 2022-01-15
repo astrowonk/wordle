@@ -49,7 +49,10 @@ I have run the latest version of the alg against the first ~200 known Wordle wor
 
 ### Full latest alg with starting word from the above analysis:
 
-* TK
+* Score of 2: 3
+* Score of 3: 56
+* Score of 4: 132
+* Score of 5: 17
 
 ### Original Code alg, with original starting word from letter/frequency analysis only:
 
