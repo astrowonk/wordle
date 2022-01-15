@@ -300,7 +300,8 @@ class Wordle():
         matching_short_words = self.make_matching_short_words()
         self.remaining_words = [x[0] for x in matching_short_words]
         self.logger.debug(
-            f"there are {len(matching_short_words)} matching short words")
+            f"there are {len(matching_short_words)} matching short words round {i}"
+        )
         if not self.guess_valid_only and (1 < i <= 5) and (
             (sum(self.good_letters.values()) >= 3
              and len(matching_short_words) > 2) or
@@ -356,6 +357,9 @@ class Wordle():
                  and self.check_bad_positions(x) and x not in self.guesses],
                 key=lambda x: (-x[1], -x[2])
             )  #sorting on total coverage tie breaking with placement score
+            self.logger.debug(
+                f"this should be the full scored short word list{str(possible_guesses[:10])}"
+            )
 
         if possible_guesses:
             ## zeroing out the other words in a paradox situation
