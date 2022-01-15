@@ -8,11 +8,11 @@ The algorithm **does not know the target list from wordle** which people have ex
 
 As of 2022-Jan-15, my target word list is as follows:
 
-    * The five letter words of the brown, gutenburg, and WordNet corpuses.
-    * Filter out plural nouns with `nltk` lemmatizer. 
-    * Filter out words not in the five letter [GloVe](https://nlp.stanford.edu/projects/glove/) common crawl dictionary.
-      * I filtered this with some sort of spelling dictionary for [another project](https://github.com/astrowonk/divergent-association-task), I believe the hunspell spelling dictionary. So I used the filtered dictionary I made there.
-      * Since this is in theory in order of frequency I thought about a cutoff around 2500 or so but wordle 37 (`unfed`), ranks 5084 on the GloVe list so I'm probably pushing my luck filtering these words out as it is.
+* The five letter words of the brown, gutenburg, and WordNet corpuses.
+* Filter out plural nouns with `nltk` lemmatizer. 
+* Filter out words not in the five letter [GloVe](https://nlp.stanford.edu/projects/glove/) common crawl dictionary.
+    * I filtered this with some sort of spelling dictionary for [another project](https://github.com/astrowonk/divergent-association-task), I believe the hunspell spelling dictionary. So I used the filtered dictionary I made there.
+    * Since this is in theory in order of frequency I thought about a cutoff around 2500 or so but wordle 37 (`unfed`), ranks 5084 on the GloVe list so I'm probably pushing my luck filtering these words out as it is.
 
 The [Twitter bot](https://twitter.com/thewordlebot) mostly works now.
 
