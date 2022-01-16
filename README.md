@@ -41,7 +41,7 @@ However, to speed this up I first generate a guess list simply by trying to cove
 
 The base `Wordle` class because of its limited NLTK dictionary can't solve all words. The default alg is the `WordNetWordle` class. If that fails I'll move onto the full 12000+ allowable word list.
 
-Also similar to the post above, I searched for an optimal starting word. However, since I am reluctant to use the ~2000 word target list, I searched the 500 best starting words based on my previous approach (on letter frequency and placement frequency) against all 12000 allowable words. That took 12 cores a few hours, but I found a word that on average reduces the remaining word choices the most. While the code is now too slow to test against all 12,000 words, based on the known 2022 actual Wordle words, the new starting word does find answers slightly faster on average.
+Also similar to the post above, I searched for an optimal starting word. However, since I am reluctant to use the ~2000 word target list, I searched the 150 best starting words based on my previous approach (on letter frequency and placement frequency) against my target dictionary. 
 
 ## Statistics
 
