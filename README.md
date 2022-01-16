@@ -47,7 +47,7 @@ Also similar to the post above, I searched for an optimal starting word. However
 
 I have run the latest version of the alg against the first ~200 known Wordle words. 2 of those words aren't in my dictionary. Those two words both are solved in 4 tries with the class with the full ~12,000 word wordle dictionary as target and allowed.
 
-### Full latest alg with starting word from the above analysis:
+### Full latest alg  (2022-1-15) with starting word from the above analysis and latest target dictionary:
 
 * Score of 2: 3
 * Score of 3: 56
