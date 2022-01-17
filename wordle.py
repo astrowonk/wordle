@@ -53,9 +53,21 @@ class Wordle():
         self.logger = logging.getLogger(__name__)
         self.log_level = self.log_level
         self.logger.setLevel(self.log_level)
+        ch = logging.StreamHandler()
+        ch.setLevel(self.log_level)
+
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s')
+        ch.setFormatter(formatter)
+        self.logger.addHandler(ch)
+
+        # add the file handler handlers to the logger
         if self.log_file:
-            ch = logging.StreamHandler()
-            self.logger.addHandler(ch)
+            fh = logging.FileHandler(self.log_file)
+            fh.setLevel(self.log_level)
+            fh.setFormatter(formatter)
+
+            self.logger.addHandler(fh)
 
         #  @lru_cache()
 
@@ -450,7 +462,7 @@ class Wordle():
                 guess = self.force_init_guess
             self.final_list_length = len(guess_word_list)
 
-            self.logger.debug(f"Guess is **{guess}**")
+            self.logger.info(f"Guess is **{guess}**")
             out = self.evaluate_round(guess)
             if out == 'Winner':
                 full_output = ''

@@ -17,10 +17,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     log_file = f"wordle_{args.wordle_num}.txt"
 
-    logging.basicConfig(format='%(asctime)s %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p',
-                        filename=log_file,
-                        level='DEBUG')
+    # logging.basicConfig(format='%(asctime)s %(message)s',
+    #                     datefmt='%m/%d/%Y %I:%M:%S %p',
+    #                     filename=log_file,
+    #                     level='DEBUG')
 
     try:
         with open('history.json') as f:
@@ -33,7 +33,7 @@ if __name__ == '__main__':
                         access_token_secret=access_token_secret)
 
     if args.wordle_num not in history:
-        w = WordNetWordle2()
+        w = WordNetWordle2(log_file=log_file)
         score, word, text, luck, word_list = w.play_game(
             args.target_word, args.wordle_num, force_init_guess=initial_guess)
         w.logger.setLevel(logging.CRITICAL)
