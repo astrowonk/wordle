@@ -301,10 +301,9 @@ class Wordle():
 
         matching_short_words = self.make_matching_short_words()
         self.remaining_words = [x[0] for x in matching_short_words]
-        just_words = [word for word, _, _ in matching_short_words]
 
         self.logger.debug(
-            f"there are {len(matching_short_words)} matching short words: {just_words[:10]}"
+            f"there are {len(matching_short_words)} matching target words: {self.remaining_words[:10]}"
         )
         if not self.guess_valid_only and (1 < i <= 5) and (
             (sum(self.good_letters.values()) >= 3
