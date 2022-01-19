@@ -10,6 +10,7 @@ import logging
 from copy import deepcopy
 from concurrent.futures import ProcessPoolExecutor
 from tqdm.notebook import tqdm
+import numpy as np
 
 
 def flatten_list(list_of_lists):
@@ -553,6 +554,21 @@ class WordNetMinMix(WordNetWordle):
         ]].sort_values(['mean', 'std', 'max'])
         res_df = orig_guess_df.join(summary_stats).sort_values(
             ['max', 'std', 'mean', 'local_coverage', 'local_placement'],
+            ascending=[True, True, True, False, False])
+        self.logger.debug(
+            f"Solution reduction stats by word {res_df.head(10).reset_index().to_dict(orient='records')}"
+        )
+
+        return res_df.index[0]
+
+
+class WordNetLog(WordNetWordle2):
+    def determine_final_guess(self, counter_factual_data, orig_guess_df):
+        """what statistic should determine the next guess. This mins the max"""
+        summary_stats = counter_factual_data.describe().T.apply(
+            np.log)[['mean', 'std', 'max']].sort_values(['mean', 'std', 'max'])
+        res_df = orig_guess_df.join(summary_stats).sort_values(
+            ['mean', 'std', 'max', 'local_coverage', 'local_placement'],
             ascending=[True, True, True, False, False])
         self.logger.debug(
             f"Solution reduction stats by word {res_df.head(10).reset_index().to_dict(orient='records')}"
