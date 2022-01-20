@@ -37,9 +37,9 @@ w2.play_game('siege')
 
 The alg now uses an idea I got from [Tyler Glaiel](https://medium.com/@tglaiel/the-mathematically-optimal-first-guess-in-wordle-cbcb03c19b0a) whereas the best guess isn't just one that covers the letter space but that, for every possible remaining answer, what guess on average would reduce the number of possiblities the most.
 
-However, to speed this up I first generate a guess list simply by trying to cover the most letter space of unused letters. This was how the alg worked previously. Then the top 25 of my old approach gets fed into the hypothetical statistical analysis to find the best guess.
+However, to speed this up I first generate a guess list simply by trying to cover the most letter space of unused letters. This was how the alg worked previously. Then the top 40 of my old approach gets fed into the hypothetical statistical analysis to find the best guess.
 
-The base `Wordle` class because of its limited NLTK dictionary can't solve all words. The default alg is the `WordNetWordle` class. If that fails I'll move onto the full 12000+ allowable word list.
+The base `Wordle` class because of its limited NLTK dictionary can't solve all words. The default alg is the `WordNetWordle2` class. If that fails I'll move onto the full 12000+ allowable word list.
 
 Also similar to the post above, I searched for an optimal starting word. However, since I am reluctant to use the ~2000 word target list, I searched the 150 best starting words based on my previous approach (on letter frequency and placement frequency) against my target dictionary. 
 
