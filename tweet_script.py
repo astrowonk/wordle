@@ -23,7 +23,7 @@ if __name__ == '__main__':
     #                     level='DEBUG')
 
     try:
-        with open('history.json') as f:
+        with open('better_history.json') as f:
             history = json.load(f)
     except:
         history = {}
@@ -32,7 +32,7 @@ if __name__ == '__main__':
                         access_token=access_token,
                         access_token_secret=access_token_secret)
 
-    if args.wordle_num not in history:
+    if args.wordle_num not in [x['wordle_num'] for x in history]:
         w = WordNetWordle2(log_file=log_file)
         score, word, text, luck, word_list = w.play_game(
             args.target_word, args.wordle_num, force_init_guess=initial_guess)
@@ -43,15 +43,14 @@ if __name__ == '__main__':
         else:
             tweet_id = None
 
-        history.update({
-            args.wordle_num: {
-                'id': tweet_id,
-                'score': score,
-                'word': word,
-                'text': text,
-                'luck': luck,
-                'word_list': word_list
-            }
+        history.append({
+            'wordle_num': args.wordle_num,
+            'id': tweet_id,
+            'score': score,
+            'word': word,
+            'text': text,
+            'luck': luck,
+            'word_list': word_list
         })
         with open('history.json', 'w') as f:
             history = json.dump(history, f, indent=4)
