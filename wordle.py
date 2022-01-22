@@ -522,6 +522,7 @@ class CounterFactual(Wordle):
 
 
 class WordNetWordle2(WordNetWordle):
+    """This is the default class for the twitter bot for now."""
     top_guess_count = 40
 
     def make_word_list(self):
@@ -562,8 +563,21 @@ class WordNetMinMix(WordNetWordle):
 
 
 class WordleR(Wordle):
+    """Using the wordle R list from:
+    
+    https://github.com/TheRensselaerIDEA/WordleR
+    
+    """
     def make_word_list(self):
         self.target_words = pd.read_csv("sorted_list.csv",
                                         sep=';')['word'].head(3000).tolist()
         self.short_words = pd.read_csv("sorted_list.csv",
                                        sep=';')['word'].head(3000).tolist()
+
+
+class Primel(Wordle):
+    """for the primel game here: https://converged.yt/primel/"""
+    def make_word_list(self):
+        primes = pd.read_csv('primes-to-100k.txt', header=None)[0].astype(str)
+        prime_list = [x for x in primes if len(x) == 5]
+        self.target_words = self.short_words = prime_list
