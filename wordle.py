@@ -90,7 +90,7 @@ class Wordle():
     def make_frequency_series(self):
         lemma = WordNetLemmatizer()
         #no plurals in the ~200 wordles so far, this is the simplest way to get rid of plurals
-        if not self.target_words:
+        if self.target_words is None:
             self.target_words = [
                 word for word in self.short_words
                 if (lemma.lemmatize(word) == word or not word.endswith('s'))
@@ -559,3 +559,11 @@ class WordNetMinMix(WordNetWordle):
         )
 
         return res_df.index[0]
+
+
+class WordleR(Wordle):
+    def make_word_list(self):
+        self.target_words = pd.read_csv("sorted_list.csv",
+                                        sep=';')['word'].head(3000).tolist()
+        self.short_words = pd.read_csv("sorted_list.csv",
+                                       sep=';')['word'].head(3000).tolist()
