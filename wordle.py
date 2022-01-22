@@ -568,11 +568,24 @@ class WordleR(Wordle):
     https://github.com/TheRensselaerIDEA/WordleR
     
     """
+    def __init__(self,
+                 log_level="DEBUG",
+                 backtest=False,
+                 log_file=None,
+                 n=3000):
+        self.n_words = n
+
+        super().__init__(log_level, backtest, log_file)
+
     def make_word_list(self):
+        all_words = pd.read_csv("sorted_list.csv", sep=';')['word']
+        if (n := self.n_words) is None:
+            n = len(all_words)
+
         self.target_words = pd.read_csv("sorted_list.csv",
-                                        sep=';')['word'].head(3000).tolist()
+                                        sep=';')['word'].head(n).tolist()
         self.short_words = pd.read_csv("sorted_list.csv",
-                                       sep=';')['word'].head(3000).tolist()
+                                       sep=';')['word'].head(n).tolist()
 
 
 class Primel(Wordle):
