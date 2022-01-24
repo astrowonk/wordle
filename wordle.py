@@ -21,8 +21,10 @@ class Wordle():
     good_letters = None
     target_words = None
     top_guess_count = 25
+    hard_mode = False
 
-    def __init__(self, log_level="DEBUG", backtest=False, log_file=None):
+    def __init__(self, log_level="DEBUG", backtest=False, log_file=None,hard_mode=False):
+        self.hard_mode = hard_mode
         self.backtest = backtest
         self.log_level = log_level
         self.log_file = log_file
@@ -279,6 +281,14 @@ class Wordle():
             return False
         return True
 
+    def check_valid_hard_guess(self, word):
+        if self.hard_mode == False:
+            return True
+        word_count_dict = dict(Counter(word))
+        return all(
+            word_count_dict.get(key, 0) >= val for key, val in
+            self.good_letters.items()) and self.match_solution(word)
+
     def check_possible_word(self, word):
         """ensures the word has the right minimum count of the letters we know are in the word and 
         no impossible letters"""
@@ -356,8 +366,8 @@ class Wordle():
                 [(x, local_coverage(x),
                   self.local_placement_score(
                       x, [word for word, _, _ in matching_short_words]))
-                 for x in self.short_words
-                 if self.check_duplicate_letters(x) and x not in self.guesses],
+                 for x in self.short_words if self.check_duplicate_letters(x)
+                 and x not in self.guesses and self.check_valid_hard_guess(x)],
                 key=lambda x: (x[1], x[2]),
                 reverse=True)
 
@@ -366,7 +376,8 @@ class Wordle():
                 [(x, self.coverage_guess(x), self.placement_score(x))
                  for x in self.short_words
                  if self.match_solution(x) and self.check_possible_word(x)
-                 and self.check_bad_positions(x) and x not in self.guesses],
+                 and self.check_bad_positions(x) and x not in self.guesses
+                 and self.check_valid_hard_guess(x)],
                 key=lambda x: (-x[1], -x[2])
             )  #sorting on total coverage tie breaking with placement score
             self.logger.debug(
