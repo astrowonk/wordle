@@ -528,17 +528,19 @@ class WordNetWordle2(WordNetWordle):
     def make_word_list(self):
         super().make_word_list()
         lemma = WordNetLemmatizer()
+        #no plurals in the ~200 wordles so far, this is the simplest way to get rid of plurals
+
         self.target_words = [
             word for word in self.short_words
             if (lemma.lemmatize(word) == word or not word.endswith('s'))
         ]
-        #no plurals in the ~200 wordles so far, this is the simplest way to get rid of plurals
         official_list = pd.read_csv('wordle-dictionary-full.txt',
                                     header=None)[0].to_list()
         self.short_words = official_list
         self.target_words = list(
             set(self.target_words).intersection(set(official_list)))
 
+        #filtering additional odd words
         common_words = set(
             pd.read_csv('glove_five_letter_common.csv',
                         header=None)[0].to_list())
@@ -546,7 +548,7 @@ class WordNetWordle2(WordNetWordle):
             set(self.target_words).intersection(set(common_words)))
 
 
-class WordNetMinMix(WordNetWordle):
+class WordNetMinMix(WordNetWordle2):
     def determine_final_guess(self, counter_factual_data, orig_guess_df):
         """what statistic should determine the next guess. This mins the max"""
         summary_stats = counter_factual_data.describe().T[[
@@ -594,3 +596,28 @@ class Primel(Wordle):
         primes = pd.read_csv('primes-to-100k.txt', header=None)[0].astype(str)
         prime_list = [x for x in primes if len(x) == 5]
         self.target_words = self.short_words = prime_list
+
+    def make_frequency_series(self):
+
+        self.score_dict = {
+            letter: sum([letter in word for word in self.target_words])
+            for letter in '0123456789'
+        }
+        letter_rank_series = pd.Series(
+            self.score_dict).sort_values(ascending=False)
+        self.letter_rank_df = pd.DataFrame(letter_rank_series,
+                                           columns=['frequency'
+                                                    ]).reset_index()
+        self.placement_counter = {
+            i: dict(Counter([word[i] for word in self.target_words]))
+            for i in range(5)
+        }
+
+    def init_game(self,
+                  answer,
+                  guess_valid_only=False,
+                  force_init_guess=None,
+                  allow_counter_factual=False):
+        super().init_game(answer, guess_valid_only, force_init_guess,
+                          allow_counter_factual)
+        self.possible_letters = list('0123456789')
