@@ -23,7 +23,11 @@ class Wordle():
     top_guess_count = 25
     hard_mode = False
 
-    def __init__(self, log_level="DEBUG", backtest=False, log_file=None,hard_mode=False):
+    def __init__(self,
+                 log_level="DEBUG",
+                 backtest=False,
+                 log_file=None,
+                 hard_mode=False):
         self.hard_mode = hard_mode
         self.backtest = backtest
         self.log_level = log_level
@@ -243,8 +247,11 @@ class Wordle():
                     key: val
                     for key, val in self.__dict__.items() if key != 'v'
                 }), hypothetical_answer)
-            w.evaluate_round(word)
-            res[word] = (len(w.make_matching_short_words()))
+            out = w.evaluate_round(word)
+            if out == 'Winner':
+                res[word] = 0
+            else:
+                res[word] = (len(w.make_matching_short_words()))
         return res
 
     def counter_factual_guess(self, top_guess_candidates):
