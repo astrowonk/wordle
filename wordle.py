@@ -644,6 +644,9 @@ class Primel(Wordle):
 
 
 class WordNetWordle3(WordNetWordle2):
+    """An even slower subclass which doesn't just computer the mean number of remaining words after each possible guess
+    but plays a naive game to the end and computes stats based on the final score. Unclear if it outperforms its parent class yet
+    as it is so much slower testing will take a while."""
     def counter_factual_check(self, hypothetical_answer, limited_word_list):
         res = []
         for word in set(limited_word_list).difference(self.guesses):
