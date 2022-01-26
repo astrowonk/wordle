@@ -53,5 +53,5 @@ if __name__ == '__main__':
             'word_list': word_list
         })
         with open('history.json', 'w') as f:
-            history = json.dump(history, f, indent=4)
+            json.dump(history, f, indent=4)
     ## need to make code to check date and tweet log reply to yesterday as well as upload the log?
