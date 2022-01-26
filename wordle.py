@@ -454,7 +454,8 @@ class Wordle():
                   wordle_num=None,
                   guess_valid_only=False,
                   force_init_guess=None,
-                  allow_counter_factual=True):
+                  allow_counter_factual=True,
+                  i=0):
         remove_answer = False
         assert answer in self.target_words, "Can't solve with limited dictionary, use full dictionary"
 
@@ -465,13 +466,14 @@ class Wordle():
         self.wordle_num = ''
         if wordle_num:
             self.wordle_num = str(wordle_num)
-        i = 0
+
         while True:
             i += 1
             guess_anagram, guess_word_list = self.generate_guess(i)
 
             self.logger.debug(
                 f"{guess_word_list[:10]}, {len(guess_word_list)}")
+            #(guess_word_list, guess_anagram, self.remaining_words)
             if guess_word_list:
                 guess = guess_word_list[0][0]
             else:
@@ -535,7 +537,7 @@ class CounterFactual(Wordle):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel('INFO')
 
-    def init_game(self, answer):
+    def init_game(self, answer, **kwargs):
         self.answer = answer
 
 
@@ -639,3 +641,67 @@ class Primel(Wordle):
         super().init_game(answer, guess_valid_only, force_init_guess,
                           allow_counter_factual)
         self.possible_letters = list('0123456789')
+
+
+class WordNetWordle3(WordNetWordle2):
+    def counter_factual_check(self, hypothetical_answer, limited_word_list):
+        res = []
+        for word in set(limited_word_list).difference(self.guesses):
+            #   print(
+            #       f"TEsting guess {word} against hypothetical answer {hypothetical_answer}"
+            #   )
+            full_res = {}
+            w = CounterFactual(
+                deepcopy({
+                    key: val
+                    for key, val in self.__dict__.items() if key != 'v'
+                }), hypothetical_answer)
+            out = w.evaluate_round(word)
+            if out == 'Winner':
+                full_res['words_left'] = 0
+            else:
+                full_res['words_left'] = (len(w.make_matching_short_words()))
+            if word == hypothetical_answer:
+                score = 0
+            else:
+                w.allow_counter_factual = False
+                score, _, _, _, _ = w.play_game(
+                    hypothetical_answer,
+                    allow_counter_factual=False,
+                )
+            full_res['final_score'] = score
+            full_res['word'] = word
+            full_res['hypothetical_answer'] = hypothetical_answer
+            res.append(full_res)
+        return res
+
+    def determine_final_guess(self, counter_factual_data, orig_guess_df):
+        """what statistic should determine the next guess. This mins the max"""
+        res_df = counter_factual_data.groupby('word')[[
+            'words_left', 'final_score'
+        ]].max().sort_values(['final_score', 'words_left'])
+        self.logger.debug(
+            f"Solution reduction stats by word {res_df.head(10).reset_index().to_dict(orient='records')}"
+        )
+
+        return res_df.index[0]
+
+    def counter_factual_guess(self, top_guess_candidates):
+        out = []
+        #for word, _, _ in self.make_matching_short_words():
+        #    out.append(self.counter_factual_check(word, top_guess_candidates))
+
+        myfunc = partial(self.counter_factual_check,
+                         limited_word_list=top_guess_candidates)
+        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+            out = list(
+                tqdm(executor.map(
+                    myfunc,
+                    [word for word, _, _ in self.make_matching_short_words()]),
+                     total=len(self.make_matching_short_words())))
+
+        full_stats = pd.concat([pd.DataFrame(x) for x in out])
+
+        self.logger.setLevel(self.log_level)
+
+        return full_stats
