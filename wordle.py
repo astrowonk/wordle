@@ -480,10 +480,11 @@ class Wordle():
                 guess = guess_anagram[0][0]
             if i == 1 and self.force_init_guess:
                 guess = self.force_init_guess
-            self.final_list_length = len(guess_word_list)
 
             self.logger.info(f"Guess is **{guess}**")
             out = self.evaluate_round(guess)
+            self.final_list_length = len(self.remaining_words)
+
             if out == 'Winner':
                 full_output = ''
                 full_output += (
@@ -491,9 +492,7 @@ class Wordle():
                 for line in self.success_grid:
                     full_output += (''.join(
                         [self.image_mapping_dict[x] for x in line])) + '\n'
-                full_output += (
-                    f"Luck factor {self.luck_factor or self.final_list_length}\n"
-                )
+                full_output += (f"Luck factor {self.final_list_length}\n")
 
                 break
         if remove_answer:
