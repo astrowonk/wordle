@@ -191,6 +191,7 @@ class Wordle():
         self.luck_factor = None
         self.luck_factor_flag = 0
         self.final_list_length = None
+        self.word_list_length = []
         self.guess_valid_only = guess_valid_only
         self.force_init_guess = force_init_guess
         if force_init_guess and force_init_guess not in self.short_words:
@@ -484,20 +485,26 @@ class Wordle():
             self.logger.info(f"Guess is **{guess}**")
             out = self.evaluate_round(guess)
             self.final_list_length = len(self.remaining_words)
+            self.word_list_length.append(self.final_list_length)
 
             if out == 'Winner':
-                full_output = ''
-                full_output += (
-                    f"Wordlebot Wordle {self.wordle_num} {i}/6") + '\n\n'
-                for line in self.success_grid:
-                    full_output += (''.join(
-                        [self.image_mapping_dict[x] for x in line])) + '\n'
-                full_output += (f"Luck factor {self.final_list_length}\n")
+                full_output = self.create_output(i)
 
                 break
         if remove_answer:
             self.short_words.remove(answer)
         return i, guess, full_output, self.luck_factor or self.final_list_length, self.guesses
+
+    def create_output(self, winning_round):
+        full_output = ''
+        full_output += (
+            f"Wordlebot Wordle {self.wordle_num} {winning_round}/6") + '\n\n'
+        for i, line in enumerate(self.success_grid):
+            full_output += (''.join(
+                [self.image_mapping_dict[x]
+                 for x in line])) + f" {self.word_list_length[i]} left\n"
+        #full_output += (f"Luck factor {self.final_list_length}\n")
+        return full_output
 
 
 class WordNetWordle(Wordle):
