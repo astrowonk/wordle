@@ -6,4 +6,4 @@ config.py
 debug.py
 *.json
 *.parquet
-
+*.zip
