@@ -497,12 +497,12 @@ class Wordle():
 
     def create_output(self, winning_round):
         full_output = ''
+        temp_dict = {key: val for key, val in enumerate(self.word_list_length)}
         full_output += (
             f"Wordlebot Wordle {self.wordle_num} {winning_round}/6") + '\n\n'
         for i, line in enumerate(self.success_grid):
-            full_output += (''.join(
-                [self.image_mapping_dict[x]
-                 for x in line])) + f" {self.word_list_length[i]} left\n"
+            full_output += (''.join([self.image_mapping_dict[x] for x in line
+                                     ])) + f" {temp_dict.get(i+1,0)} left\n"
         #full_output += (f"Luck factor {self.final_list_length}\n")
         return full_output
 
