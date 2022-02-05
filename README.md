@@ -1,6 +1,8 @@
 
 ## Wordle Solver
 
+(See also [TwitterWordle](https://github.com/astrowonk/TwitterWordle) which "solves" the Wordle by analyzing tweeted scores.)
+
 This can not help you win a live game of [wordle](https://www.powerlanguage.co.uk/wordle/). It can algorithimically solve a wordle like puzzle only if you pass in a target word. In theory, it's making the optimal plays to maximize letter frequency and position frequency and reduce the remaining possibilities. So if you did better than the algorithm, well done! It exists for comparitive 
 use only, not to help people solve the puzzle. (There is no interface to give it feedback, it is designed to play against itself.)
 
