@@ -15,6 +15,8 @@ from tqdm.notebook import tqdm
 def flatten_list(list_of_lists):
     return [y for x in list_of_lists for y in x]
 
+def get_sub_string(x, indices):
+    return ''.join(x[i] for i in indices)
 
 class Wordle():
     max_workers = 8
@@ -343,8 +345,7 @@ class Wordle():
             #this line above is like hyperparameter tuning. What's the right
             #blend of parameters? And am I trying to avoid failure or
             # get the best average time to solution and accept more failures?
-            def get_sub_string(x, indices):
-                return ''.join(x[i] for i in indices)
+
 
             indices_we_know = [x[1] for x in self.partial_solution.items()]
             missing_indices = [x for x in range(5) if x not in indices_we_know]
