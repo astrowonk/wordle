@@ -7,3 +7,4 @@ debug.py
 *.json
 *.parquet
 *.zip
+!wordle-dictionary-full.txt
