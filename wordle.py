@@ -15,8 +15,10 @@ from tqdm.notebook import tqdm
 def flatten_list(list_of_lists):
     return [y for x in list_of_lists for y in x]
 
+
 def get_sub_string(x, indices):
     return ''.join(x[i] for i in indices)
+
 
 class Wordle():
     max_workers = 8
@@ -131,24 +133,25 @@ class Wordle():
             for i in range(5)
         }
 
-    def get_num_line(self, guess, answer):
-
+    @staticmethod
+    def get_num_line(guess, answer):
+        """Make the wordle score line for a given guess and answer, method borrowed from my Wordle solver class"""
         match_and_position = [
             2 * int(letter == answer[i]) for i, letter in enumerate(guess)
         ]
-        #self.logger.debug(match_and_position)
-
         remaining_letters = [
             x for i, x in enumerate(answer) if match_and_position[i] != 2
         ]
 
-        #self.logger.debug(remaining_letters)
+        # print('remaining letters', remaining_letters)
 
         def find_non_position_match(remaining_letters, guess):
             """has to be a better way"""
             res = []
-            for letter in guess:
-                if letter in remaining_letters:
+            for i, letter in enumerate(guess):
+                # print(letter)
+                # print(letter in remaining_letters)
+                if letter in remaining_letters and match_and_position[i] != 2:
                     res.append(1)
                     remaining_letters.remove(letter)
                 else:
@@ -156,7 +159,6 @@ class Wordle():
             return res
 
         non_position_match = find_non_position_match(remaining_letters, guess)
-        #self.logger.debug(str(non_position_match))
         return [x or y for x, y in zip(match_and_position, non_position_match)]
 
     def score_word(self, guess, answer):
@@ -345,7 +347,6 @@ class Wordle():
             #this line above is like hyperparameter tuning. What's the right
             #blend of parameters? And am I trying to avoid failure or
             # get the best average time to solution and accept more failures?
-
 
             indices_we_know = [x[1] for x in self.partial_solution.items()]
             missing_indices = [x for x in range(5) if x not in indices_we_know]
