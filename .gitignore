@@ -8,3 +8,4 @@ debug.py
 *.parquet
 *.zip
 !wordle-dictionary-full.txt
+!wordle-all_2022-02-15.txt
