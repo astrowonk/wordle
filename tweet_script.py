@@ -26,7 +26,7 @@ if __name__ == '__main__':
         with open('better_history.json') as f:
             history = json.load(f)
     except:
-        history = {}
+        history = []
     api = tweepy.Client(consumer_key=api_key,
                         consumer_secret=api_secret,
                         access_token=access_token,
