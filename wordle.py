@@ -406,7 +406,8 @@ class Wordle():
                 columns=['word', 'local_coverage',
                          'local_placement']).set_index('word')
             if self.allow_counter_factual and i > 1:
-
+                if len(self.remaining_words) <=6:
+                    try_these.extend(self.remaining_words)
                 if augmented_guesses:
                     new_guesses = sorted(
                         list(
