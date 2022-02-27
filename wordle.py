@@ -26,6 +26,7 @@ class Wordle():
     target_words = None
     top_guess_count = 25
     hard_mode = False
+    commonality = None
 
     def __init__(self,
                  log_level="DEBUG",
@@ -40,9 +41,20 @@ class Wordle():
         self.image_mapping_dict = {1: "🟨", 0: "⬜", 2: "🟩"}
         self.make_word_list()
         self.make_frequency_series()
+        self.make_commonality_lookup()
         self.logger.debug(
             f"Wordle inited with {len(self.target_words)} target words and {len(self.short_words)} dictionary words"
         )
+
+    def make_commonality_lookup(self):
+        df = pd.read_csv("unigram_freq.csv")
+        # Establish a minimum frequency for any Wordle word that's missing from the frequency dataset
+        min_freq = 0
+        english_freqs = {df["word"][i]: df["count"][i] for i in df.index}
+        self.commonality = {
+            w: min_freq if w not in english_freqs else english_freqs[w]
+            for w in self.target_words
+        }
 
     def make_word_list(self):
         short_words_guttenburg = list({
@@ -270,8 +282,8 @@ class Wordle():
             out = list(
                 tqdm(executor.map(
                     myfunc,
-                    [word for word, _, _ in self.make_matching_short_words()]),
-                     total=len(self.make_matching_short_words())))
+                    self.remaining_words),
+                     total=len(self.remaining_words)))
 
         full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
 
@@ -322,11 +334,11 @@ class Wordle():
 
     def make_matching_short_words(self):
         return sorted(
-            [(x, self.coverage_guess(x), self.placement_score(x))
-             for x in self.remaining_words
+            [(x, self.coverage_guess(x), self.placement_score(x),
+              self.commonality.get(x, 0)) for x in self.remaining_words
              if self.match_solution(x) and self.check_possible_word(x)
              and self.check_bad_positions(x) and x not in self.guesses],
-            key=lambda x: (-x[1], -x[2])
+            key=lambda x: (-x[3])
         )  #sorting on total coverage tie breaking with placement score
 
     def generate_guess(self, i=0, augmented_guesses=None):
@@ -353,7 +365,7 @@ class Wordle():
             letters_it_could_be = set(
                 flatten_list([
                     get_sub_string(x, missing_indices)
-                    for x, y, z in matching_short_words
+                    for x, y, z, _ in matching_short_words
                 ]))
             #don't use any letters we know, maximize coverage of new letters
             letters_it_could_be = letters_it_could_be.difference(
@@ -375,7 +387,7 @@ class Wordle():
             possible_guesses = sorted(
                 [(x, local_coverage(x),
                   self.local_placement_score(
-                      x, [word for word, _, _ in matching_short_words]))
+                      x, self.remaining_words))
                  for x in self.short_words if self.check_duplicate_letters(x)
                  and x not in self.guesses and self.check_valid_hard_guess(x)],
                 key=lambda x: (x[1], x[2]),
@@ -384,7 +396,7 @@ class Wordle():
         elif i == 1:
             possible_guesses = sorted(
                 [(x, self.coverage_guess(x), self.placement_score(x))
-                 for x in self.short_words
+                 for x in self.remaining_words
                  if self.match_solution(x) and self.check_possible_word(x)
                  and self.check_bad_positions(x) and x not in self.guesses
                  and self.check_valid_hard_guess(x)],
@@ -406,7 +418,7 @@ class Wordle():
                 columns=['word', 'local_coverage',
                          'local_placement']).set_index('word')
             if self.allow_counter_factual and i > 1:
-                if len(self.remaining_words) <=6:
+                if len(self.remaining_words) <= 6:
                     try_these.extend(self.remaining_words)
                 if augmented_guesses:
                     new_guesses = sorted(
