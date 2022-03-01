@@ -280,9 +280,7 @@ class Wordle():
                          limited_word_list=top_guess_candidates)
         with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             out = list(
-                tqdm(executor.map(
-                    myfunc,
-                    self.remaining_words),
+                tqdm(executor.map(myfunc, self.remaining_words),
                      total=len(self.remaining_words)))
 
         full_stats = pd.concat([pd.Series(x) for x in out], axis=1).T
@@ -386,8 +384,7 @@ class Wordle():
 
             possible_guesses = sorted(
                 [(x, local_coverage(x),
-                  self.local_placement_score(
-                      x, self.remaining_words))
+                  self.local_placement_score(x, self.remaining_words))
                  for x in self.short_words if self.check_duplicate_letters(x)
                  and x not in self.guesses and self.check_valid_hard_guess(x)],
                 key=lambda x: (x[1], x[2]),
@@ -418,8 +415,19 @@ class Wordle():
                 columns=['word', 'local_coverage',
                          'local_placement']).set_index('word')
             if self.allow_counter_factual and i > 1:
+                print(self.remaining_words, len(self.remaining_words))
                 if len(self.remaining_words) <= 6:
+                    print('adding remaining words')
                     try_these.extend(self.remaining_words)
+                    new_df = pd.DataFrame(
+                        [[
+                            x,
+                            local_coverage(x),
+                            self.local_placement_score(x, self.remaining_words)
+                        ] for x in self.remaining_words],
+                        columns=['word', 'local_coverage',
+                                 'local_placement']).set_index('word')
+                    orig_guess_df = pd.concat([orig_guess_df, new_df])
                 if augmented_guesses:
                     new_guesses = sorted(
                         list(
@@ -460,7 +468,7 @@ class Wordle():
             ['mean', 'std', 'max', 'local_coverage', 'local_placement'],
             ascending=[True, True, True, False, False])
         self.logger.debug(
-            f"Solution reduction stats by word {res_df.head(10).reset_index().to_dict(orient='records')}"
+            f"Solution reduction stats by word {res_df.head(15).reset_index().to_dict(orient='records')}"
         )
 
         return res_df.index[0]
