@@ -215,6 +215,7 @@ class Wordle():
         self.allow_counter_factual = allow_counter_factual
         self.remaining_words = self.target_words
         self.augmented_guess_count = 0
+        self.no_double_letters = {}
 
     def evaluate_round(self, guess):
         self.guesses.append(guess)
@@ -250,6 +251,11 @@ class Wordle():
             for key, val in c.items():
                 if val > self.good_letters[key]:
                     self.good_letters[key] = val
+
+        c_guess = Counter(guess)
+        for key, val in c_guess.items():
+            if val > self.good_letters[key]:
+                self.no_double_letters[key] = True
 
         for x, y in position_tuples:
             self.partial_solution[y] = x
@@ -330,12 +336,18 @@ class Wordle():
     def check_bad_positions(self, word):
         return all(word[val] != key for key, val in self.bad_position_dict)
 
+    def check_no_double_letters(self, word):
+        double_letters = [key for key, val in Counter(word).items() if val > 1]
+        return all(letter not in self.no_double_letters.keys()
+                   for letter in double_letters)
+
     def make_matching_short_words(self):
         return sorted(
             [(x, self.coverage_guess(x), self.placement_score(x),
-              self.commonality.get(x, 0)) for x in self.remaining_words
-             if self.match_solution(x) and self.check_possible_word(x)
-             and self.check_bad_positions(x) and x not in self.guesses],
+              self.commonality.get(x, 0))
+             for x in self.remaining_words if self.match_solution(x)
+             and self.check_possible_word(x) and self.check_bad_positions(x)
+             and self.check_no_double_letters(x) and x not in self.guesses],
             key=lambda x: (-x[3])
         )  #sorting on total coverage tie breaking with placement score
 
@@ -384,7 +396,8 @@ class Wordle():
 
             possible_guesses = sorted(
                 [(x, local_coverage(x),
-                  self.local_placement_score(x, self.remaining_words))
+                  self.local_placement_score(
+                      x, self.remaining_words), self.commonality.get(x, 0))
                  for x in self.short_words if self.check_duplicate_letters(x)
                  and x not in self.guesses and self.check_valid_hard_guess(x)],
                 key=lambda x: (x[1], x[2]),
@@ -392,8 +405,8 @@ class Wordle():
 
         elif i == 1:
             possible_guesses = sorted(
-                [(x, self.coverage_guess(x), self.placement_score(x))
-                 for x in self.remaining_words
+                [(x, self.coverage_guess(x), self.placement_score(x),
+                  self.commonality.get(x, 0)) for x in self.remaining_words
                  if self.match_solution(x) and self.check_possible_word(x)
                  and self.check_bad_positions(x) and x not in self.guesses
                  and self.check_valid_hard_guess(x)],
@@ -412,21 +425,22 @@ class Wordle():
 
             orig_guess_df = pd.DataFrame(
                 possible_guesses[:self.top_guess_count],
-                columns=['word', 'local_coverage',
-                         'local_placement']).set_index('word')
+                columns=[
+                    'word', 'local_coverage', 'local_placement', 'commonality'
+                ]).set_index('word')
             if self.allow_counter_factual and i > 1:
-                print(self.remaining_words, len(self.remaining_words))
                 if len(self.remaining_words) <= 6:
-                    print('adding remaining words')
                     try_these.extend(self.remaining_words)
-                    new_df = pd.DataFrame(
-                        [[
-                            x,
-                            local_coverage(x),
-                            self.local_placement_score(x, self.remaining_words)
-                        ] for x in self.remaining_words],
-                        columns=['word', 'local_coverage',
-                                 'local_placement']).set_index('word')
+                    new_df = pd.DataFrame([[
+                        x,
+                        local_coverage(x),
+                        self.local_placement_score(x, self.remaining_words),
+                        self.commonality.get(x, 0)
+                    ] for x in self.remaining_words],
+                                          columns=[
+                                              'word', 'local_coverage',
+                                              'local_placement', 'commonality'
+                                          ]).set_index('word')
                     orig_guess_df = pd.concat([orig_guess_df, new_df])
                 if augmented_guesses:
                     new_guesses = sorted(
@@ -465,8 +479,11 @@ class Wordle():
             'mean', 'std', 'max'
         ]].sort_values(['mean', 'std', 'max'])
         res_df = orig_guess_df.join(summary_stats).sort_values(
-            ['mean', 'std', 'max', 'local_coverage', 'local_placement'],
-            ascending=[True, True, True, False, False])
+            [
+                'mean', 'std', 'max', 'commonality', 'local_coverage',
+                'local_placement'
+            ],
+            ascending=[True, True, True, False, False, False])
         self.logger.debug(
             f"Solution reduction stats by word {res_df.head(15).reset_index().to_dict(orient='records')}"
         )
