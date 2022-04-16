@@ -256,6 +256,9 @@ class Wordle():
         for key, val in c_guess.items():
             if val > self.good_letters[key]:
                 self.no_double_letters[key] = True
+        for key, val in self.good_letters.items():
+            if val > 1 and key in self.no_double_letters.keys():
+                del self.no_double_letters[key]
 
         for x, y in position_tuples:
             self.partial_solution[y] = x
