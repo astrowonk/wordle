@@ -236,7 +236,7 @@ class Wordle():
         ])
         self.bad_position_dict = list(set(self.bad_position_dict))
         if bad_letters == 'Winner':
-            self.logger.debug('Winner')
+            self.logger.debug(f'Winner in {len(self.guesses)}: {self.guesses}')
             return "Winner"
         for letter in bad_letters:
             if letter in self.possible_letters:
