@@ -32,26 +32,29 @@ if __name__ == '__main__':
                         access_token=access_token,
                         access_token_secret=access_token_secret)
 
-    if args.wordle_num not in [x['wordle_num'] for x in history]:
-        w = WordNetWordle2(log_file=log_file)
-        score, word, text, luck, word_list = w.play_game(
-            args.target_word, args.wordle_num, force_init_guess=initial_guess)
-        w.logger.setLevel(logging.CRITICAL)
-        if not args.no_tweet:
-            response = api.create_tweet(text=text)
-            tweet_id = response.data['id']
-        else:
-            tweet_id = None
 
-        history.append({
-            'wordle_num': args.wordle_num,
-            'id': tweet_id,
-            'score': score,
-            'word': word,
-            'text': text,
-            'luck': luck,
-            'word_list': word_list
-        })
-        with open('better_history.json', 'w') as f:
-            json.dump(history, f, indent=4)
+    assert args.wordle_num not in [x['wordle_num'] for x in history], f"{args.wordle_num} in history file."
+
+    w = WordNetWordle2(log_file=log_file)
+    score, word, text, luck, word_list = w.play_game(
+        args.target_word, args.wordle_num, force_init_guess=initial_guess)
+    w.logger.setLevel(logging.CRITICAL)
+    if not args.no_tweet:
+        response = api.create_tweet(text=text)
+        tweet_id = response.data['id']
+    else:
+        tweet_id = None
+
+    history.append({
+        'wordle_num': args.wordle_num,
+        'id': tweet_id,
+        'score': score,
+        'word': word,
+        'text': text,
+        'luck': luck,
+        'word_list': word_list
+    })
+    with open('better_history.json', 'w') as f:
+        json.dump(history, f, indent=4)
+
     ## need to make code to check date and tweet log reply to yesterday as well as upload the log?
