@@ -603,7 +603,7 @@ class WordNetWordle2(WordNetWordle):
             word for word in self.short_words
             if (lemma.lemmatize(word) == word or not word.endswith('s'))
         ]
-        official_list = pd.read_csv('wordle-all_2022-02-15.txt',
+        official_list = pd.read_csv('wordlist_nyt20220830_all.txt',
                                     header=None)[0].to_list()
         self.short_words = official_list
         self.target_words = list(
