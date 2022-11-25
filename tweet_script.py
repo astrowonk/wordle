@@ -1,5 +1,7 @@
 from wordle import WordNetWordle2
 import argparse
+import requests
+import datetime
 import logging
 from config import *
 import tweepy
@@ -8,8 +10,16 @@ import json
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Wordle')
-    parser.add_argument('target_word', type=str, help='target word')
-    parser.add_argument('wordle_num', type=int, help='number of wordle')
+    parser.add_argument('target_word',
+                        type=str,
+                        help='target word',
+                        nargs='?',
+                        default=None)
+    parser.add_argument('wordle_num',
+                        type=int,
+                        help='number of wordle',
+                        nargs='?',
+                        default=None)
     parser.add_argument('--no-tweet',
                         action='store_true',
                         help='no tweet',
@@ -32,12 +42,23 @@ if __name__ == '__main__':
                         access_token=access_token,
                         access_token_secret=access_token_secret)
 
-
-    assert args.wordle_num not in [x['wordle_num'] for x in history], f"{args.wordle_num} in history file."
+    if not (args.target_word and args.wordle_num):
+        date = datetime.datetime.now().strftime("%Y-%m-%d")
+        url = f"https://www.nytimes.com/svc/wordle/v2/{date}.json"
+        print(f"Retrieving {url}")
+        data = requests.get(url).json()
+        print(data)
+        wordle_num = data['days_since_launch']
+        target_word = data['solution']
+    else:
+        target_word = args.target_word
+        wordle_num = args.wordle_num
+    assert wordle_num not in [x['wordle_num'] for x in history
+                              ], f"{wordle_num} in history file."
 
     w = WordNetWordle2(log_file=log_file)
     score, word, text, luck, word_list = w.play_game(
-        args.target_word, args.wordle_num, force_init_guess=initial_guess)
+        target_word, wordle_num, force_init_guess=initial_guess)
     w.logger.setLevel(logging.CRITICAL)
     if not args.no_tweet:
         response = api.create_tweet(text=text)
