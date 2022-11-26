@@ -6,6 +6,7 @@ import logging
 from config import *
 import tweepy
 import json
+from mastodon import Mastodon
 
 if __name__ == '__main__':
 
@@ -23,6 +24,10 @@ if __name__ == '__main__':
     parser.add_argument('--no-tweet',
                         action='store_true',
                         help='no tweet',
+                        default=False)
+    parser.add_argument('--no-mast',
+                        action='store_true',
+                        help='no mastodon',
                         default=False)
     args = parser.parse_args()
     log_file = f"wordle_{args.wordle_num}.txt"
@@ -53,22 +58,37 @@ if __name__ == '__main__':
     else:
         target_word = args.target_word
         wordle_num = args.wordle_num
-    assert wordle_num not in [x['wordle_num'] for x in history
-                              ], f"{wordle_num} in history file."
 
     w = WordNetWordle2(log_file=log_file)
     score, word, text, luck, word_list = w.play_game(
         target_word, wordle_num, force_init_guess=initial_guess)
     w.logger.setLevel(logging.CRITICAL)
+    entry = [x for x in history if x['wordle_num'] == wordle_num]
+    if entry:
+        entry = entry[0]
     if not args.no_tweet:
+
+        assert entry.get('id') is None, f'wordle {wordle_num} has been tweeted'
         response = api.create_tweet(text=text)
         tweet_id = response.data['id']
     else:
         tweet_id = None
+    if not args.no_mast:
+
+        assert entry.get(
+            'mast_id') is None, f'wordle {wordle_num} has been tooted'
+
+        mastodon = Mastodon(access_token='mastodon.secret',
+                            api_base_url='https://botsin.space')
+        response = mastodon.status_post(status=text, spoiler_text="#Wordle")
+        mastodon_id = response['id']
+    else:
+        mastodon_id = None
 
     history.append({
         'wordle_num': args.wordle_num,
         'id': tweet_id,
+        'masto_id': mastodon_id,
         'score': score,
         'word': word,
         'text': text,
