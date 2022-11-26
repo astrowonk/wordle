@@ -52,7 +52,6 @@ if __name__ == '__main__':
         url = f"https://www.nytimes.com/svc/wordle/v2/{date}.json"
         print(f"Retrieving {url}")
         data = requests.get(url).json()
-        print(data)
         wordle_num = data['days_since_launch']
         target_word = data['solution']
     else:
@@ -78,9 +77,10 @@ if __name__ == '__main__':
         assert entry.get(
             'mast_id') is None, f'wordle {wordle_num} has been tooted'
 
+        text = text + "\n#Wordle"
         mastodon = Mastodon(access_token='mastodon.secret',
                             api_base_url='https://botsin.space')
-        response = mastodon.status_post(status=text, spoiler_text="#Wordle")
+        response = mastodon.status_post(status=text, spoiler_text="Wordle")
         mastodon_id = response['id']
     else:
         mastodon_id = None
