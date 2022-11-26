@@ -61,10 +61,13 @@ if __name__ == '__main__':
     w = WordNetWordle2(log_file=log_file)
     score, word, text, luck, word_list = w.play_game(
         target_word, wordle_num, force_init_guess=initial_guess)
+    print('solved')
     w.logger.setLevel(logging.CRITICAL)
     entry = [x for x in history if x['wordle_num'] == wordle_num]
     if entry:
         entry = entry[0]
+    else:
+        entry = {}
     if not args.no_tweet:
 
         assert entry.get('id') is None, f'wordle {wordle_num} has been tweeted'
