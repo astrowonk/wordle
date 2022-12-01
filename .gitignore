@@ -10,3 +10,4 @@ debug.py
 !wordle-dictionary-full.txt
 !wordle-all_2022-02-15.txt
 mastodon.secret
+tweet_wordle.log
