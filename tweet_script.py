@@ -29,6 +29,11 @@ if __name__ == '__main__':
                         action='store_true',
                         help='no mastodon',
                         default=False)
+
+    parser.add_argument('--date',
+                        type=str,
+                        help='run for this date',
+                        default=None)
     args = parser.parse_args()
     log_file = f"wordle_{args.wordle_num}.txt"
 
@@ -48,7 +53,10 @@ if __name__ == '__main__':
                         access_token_secret=access_token_secret)
 
     if not (args.target_word and args.wordle_num):
-        date = datetime.datetime.now().strftime("%Y-%m-%d")
+        if not args.date:
+            date = datetime.datetime.now().strftime("%Y-%m-%d")
+        else:
+            date = args.date
         url = f"https://www.nytimes.com/svc/wordle/v2/{date}.json"
         print(f"Retrieving {url}")
         data = requests.get(url).json()
