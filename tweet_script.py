@@ -97,7 +97,7 @@ if __name__ == '__main__':
         mastodon_id = None
 
     history.append({
-        'wordle_num': args.wordle_num,
+        'wordle_num': wordle_num,
         'id': tweet_id,
         'masto_id': mastodon_id,
         'score': score,
