@@ -91,7 +91,8 @@ if __name__ == '__main__':
         text = text + "\n#Wordle"
         mastodon = Mastodon(access_token='mastodon.secret',
                             api_base_url='https://botsin.space')
-        response = mastodon.status_post(status=text, spoiler_text="Wordle")
+        response = mastodon.status_post(status=text,
+                                        spoiler_text=f"Wordle {wordle_num}")
         mastodon_id = response['id']
     else:
         mastodon_id = None
