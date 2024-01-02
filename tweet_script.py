@@ -4,7 +4,6 @@ import requests
 import datetime
 import logging
 from config import *
-import tweepy
 import json
 from mastodon import Mastodon
 
@@ -47,11 +46,6 @@ if __name__ == '__main__':
             history = json.load(f)
     except:
         history = []
-    api = tweepy.Client(consumer_key=api_key,
-                        consumer_secret=api_secret,
-                        access_token=access_token,
-                        access_token_secret=access_token_secret)
-
     if not (args.target_word and args.wordle_num):
         if not args.date:
             date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -76,13 +70,6 @@ if __name__ == '__main__':
         entry = entry[0]
     else:
         entry = {}
-    if not args.no_tweet:
-
-        assert entry.get('id') is None, f'wordle {wordle_num} has been tweeted'
-        response = api.create_tweet(text=text)
-        tweet_id = response.data['id']
-    else:
-        tweet_id = None
     if not args.no_mast:
 
         assert entry.get(
@@ -99,7 +86,6 @@ if __name__ == '__main__':
 
     history.append({
         'wordle_num': wordle_num,
-        'id': tweet_id,
         'masto_id': mastodon_id,
         'score': score,
         'word': word,
