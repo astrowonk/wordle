@@ -10,7 +10,9 @@ from mastodon import Mastodon
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Wordle')
     parser.add_argument('target_word', type=str, help='target word', nargs='?', default=None)
-    parser.add_argument('wordle_num', type=int, help='number of wordle', nargs='?', default=None)
+    parser.add_argument(
+        'wordle_num', type=int, help='number of wordle', nargs='?', default=None
+    )
     parser.add_argument('--no-tweet', action='store_true', help='no tweet', default=False)
     parser.add_argument('--no-mast', action='store_true', help='no mastodon', default=False)
 
@@ -65,7 +67,7 @@ if __name__ == '__main__':
         assert entry.get('mast_id') is None, f'wordle {wordle_num} has been tooted'
 
         text = text + '\n#Wordle'
-        mastodon = Mastodon(access_token='mastodon.secret', api_base_url='https://botsin.space')
+        mastodon = Mastodon(access_token='mastodon.secret', api_base_url='https://vmst.io')
         response = mastodon.status_post(status=text, spoiler_text=f'Wordle {wordle_num}')
         mastodon_id = response['id']
     else:
